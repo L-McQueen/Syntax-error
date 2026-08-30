@@ -264,7 +264,7 @@ Robot {
     }
     Camera {
       translation 0.04 0 0.04
-      rotation 0 1 0 -0.7854
+      rotation 0 1 0 0.7854
       children [
         Shape {
           appearance PBRAppearance {
@@ -281,8 +281,8 @@ Robot {
       height 128
     }
     Camera {
-      translation 0 0 0.09
-      rotation 0 1 0 -1.5708
+      translation 0 0 0.08
+      rotation 0 0 1 0
       children [
         Shape {
           appearance PBRAppearance {

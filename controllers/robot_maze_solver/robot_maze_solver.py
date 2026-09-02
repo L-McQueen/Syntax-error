@@ -40,23 +40,17 @@ class VisionProcessor(threading.Thread):
                 
             if upper_frame is not None:
                 gray = cv2.cvtColor(upper_frame, cv2.COLOR_BGRA2GRAY)
-                try:
-                    # OpenCV 4.7+ / 4.8+ format
-                    aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-                    parameters = cv2.aruco.DetectorParameters()
-                    detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
-                    corners, ids, rejected = detector.detectMarkers(gray)
-                except AttributeError:
-                    # Older OpenCV fallback
-                    aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
-                    parameters = cv2.aruco.DetectorParameters_create()
-                    corners, ids, rejected = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
+                # OpenCV 4.7+ / 5.0 format
+                aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+                parameters = cv2.aruco.DetectorParameters()
+                detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+                corners, ids, _ = detector.detectMarkers(gray)
                 
-                disp_upper = upper_frame.copy()
+                disp_upper = cv2.cvtColor(upper_frame, cv2.COLOR_BGRA2BGR)
                 if ids is not None and len(ids) > 0:
                     cv2.aruco.drawDetectedMarkers(disp_upper, corners, ids)
                     
-                    marker_id = ids[0][0]
+                    marker_id = int(np.ravel(ids)[0])
                     if self.last_aruco_printed != marker_id:
                         print(f"[VISION] ARUCO FOUND! ID: {marker_id}")
                         self.last_aruco_printed = marker_id
@@ -346,7 +340,10 @@ class MazeSolver:
                     
         elif self.state == "RETURN_HOME":
             if len(self.route_stack) > 0:
-                target_x, target_y = self.route_stack.pop()
+                self.route_stack.pop() # Discard current cell
+                
+            if len(self.route_stack) > 0:
+                target_x, target_y = self.route_stack[-1] # Peek at next cell
                 heading_deg = self.get_heading_to_target(self.grid_x, self.grid_y, target_x, target_y)
                 self.target_yaw = math.radians(heading_deg)
                 self.grid_x = target_x

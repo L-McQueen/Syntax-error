@@ -350,14 +350,17 @@ class MazeSupervisor(Supervisor):
         # --- GENERATE ARUCO MARKER DYNAMICALLY ---
         import cv2
         import os
+        import random
         current_dir = os.path.dirname(os.path.abspath(__file__))
         textures_dir = os.path.join(current_dir, '..', '..', 'worlds', 'textures')
         os.makedirs(textures_dir, exist_ok=True)
         aruco_path = os.path.join(textures_dir, 'aruco.bmp')
         try:
             aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-            marker_image = cv2.aruco.generateImageMarker(aruco_dict, 42, 256)
+            random_id = random.randint(0, 49)
+            marker_image = cv2.aruco.generateImageMarker(aruco_dict, random_id, 256)
             cv2.imwrite(aruco_path, marker_image)
+            print(f"[SUPERVISOR] Spawned ArUco Marker with ID: {random_id}")
         except Exception as e:
             print(f"Failed to generate ArUco: {e}")
             

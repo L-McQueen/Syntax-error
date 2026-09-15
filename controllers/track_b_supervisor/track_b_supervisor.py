@@ -131,9 +131,14 @@ class TrackBSupervisor(Supervisor):
         conectando hacia el interior por la fila inferior (gy=-1).
         Todas las 9 casillas de la Sección 1 (3x3) son blancas con la pelota en el centro (1, 1).
         """
-        # Candidatas exteriores para la Casilla Verde fuera del 3x3 (gy = -1)
+        # Candidatas exteriores para la Casilla Verde fuera del 3x3 (Sur, Norte u Oeste):
+        # Sur (gy = -1): (0, -1), (1, -1), (2, -1)
+        # Norte (gy = 3): (0, 3), (1, 3), (2, 3)
+        # Oeste (gx = -1): (-1, 0), (-1, 1), (-1, 2)
         s1_outside_candidates = [
-            (0, -1), (1, -1), (2, -1)
+            (0, -1), (1, -1), (2, -1),
+            (0, 3),  (1, 3),  (2, 3),
+            (-1, 0), (-1, 1), (-1, 2)
         ]
 
         cfg_start = self.config.get("start_cell")
@@ -279,9 +284,21 @@ class TrackBSupervisor(Supervisor):
 
             log(f"[S3 RANDOM WALK] Camino generado ({len(best_path)} celdas): {best_path}")
 
-            # Celda de meta FIN inmediatamente después de la última celda del camino
+            # Celda de meta FIN inmediatamente conectada a la última celda del camino
             last_cell = best_path[-1]
-            finish_cell = (last_cell[0], last_cell[1] + 1)
+            exit_candidates = []
+            # Preferir salir hacia el exterior del 3x3:
+            if last_cell[1] == 2: exit_candidates.append((last_cell[0], 3))      # Norte exterior
+            if last_cell[0] == 11: exit_candidates.append((12, last_cell[1]))    # Este exterior
+            if last_cell[1] == 0: exit_candidates.append((last_cell[0], -1))     # Sur exterior
+
+            # O celdas adyacentes no visitadas
+            for dx, dy in [(1, 0), (0, 1), (0, -1), (-1, 0)]:
+                nx, ny = last_cell[0] + dx, last_cell[1] + dy
+                if (nx, ny) not in best_path and (nx, ny) != (8, 1):
+                    exit_candidates.append((nx, ny))
+
+            finish_cell = exit_candidates[0] if exit_candidates else (last_cell[0], last_cell[1] + 1)
 
             # Calcular colores según REFERENCIA ABSOLUTA (Reglamento Sim2Real 2026):
             # Este (1, 0)   = Naranja  [1.0, 0.5, 0.0] (0.0°)
@@ -596,8 +613,15 @@ class TrackBSupervisor(Supervisor):
             trans_field = robot_node.getField("translation")
             trans_field.setSFVec3f([sx, sy, 0.03])
             rot_field = robot_node.getField("rotation")
-            # Orientado recto hacia el Norte (+Y) para ingresar directamente a la cuadrícula 3x3
-            yaw = 1.5707963  # 90.0° Norte (+Y)
+            # Orientado hacia el interior de la cuadrícula 3x3
+            if gy <= -1:
+                yaw = 1.5707963   # 90.0° Norte (+Y)
+            elif gy >= 3:
+                yaw = -1.5707963  # -90.0° Sur (-Y)
+            elif gx <= -1:
+                yaw = 0.0         # 0.0° Este (+X)
+            else:
+                yaw = 1.5707963
             rot_field.setSFRotation([0, 0, 1, yaw])
             robot_node.resetPhysics()
             log(f"[ROBOT] Sim2RealRobot teletransportado a INICIO {self.start_cell} -> ({sx:.3f}, {sy:.3f}, 0.030) rumbo {math.degrees(yaw):.1f}°.")

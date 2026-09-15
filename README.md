@@ -234,7 +234,7 @@ donde $\theta_{\text{walls}}$ es el **ángulo físico real** del carrito respect
 La diferencia entre lo que reporta el giróscopo (`current_yaw` o $\psi_{\text{imu}}$) y la orientación física real de la pared ($\psi_{\text{meta}} + \theta_{\text{walls}}$) es la **deriva pura del IMU** ($\epsilon_{\text{deriva}}$):
 
 $$
-\epsilon_{\text{deriva}} = \operatorname{wrap}\left(\psi_{\text{imu}} - \psi_{\text{meta}} - \theta_{\text{walls}}\right)
+\epsilon_{\text{deriva}} = \mathrm{wrap}\left(\psi_{\text{imu}} - \psi_{\text{meta}} - \theta_{\text{walls}}\right)
 $$
 
 **Paso 4: Compensación continua en vivo (`yaw_offset` o $\psi_{\text{offset}}$)**  

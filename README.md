@@ -125,21 +125,30 @@ Como no tenemos encoders de rueda, creamos un sistema de odometría redundante b
 
 #### A. Modelo Eléctrico de los Motores N20:
 1. **Velocidad Angular Máxima a 7.8V:**
-   $$\text{RPM}_{7.8V} = 297.0 \times \left(\frac{7.8\text{ V}}{6.0\text{ V}}\right) = 386.1\text{ RPM}$$
+
+   $$\text{RPM}_{7.8\text{V}} = 297.0 \times \left(\frac{7.8\text{ V}}{6.0\text{ V}}\right) = 386.1\text{ RPM}$$
+
    $$\omega_{\text{max}} = 386.1 \times \frac{2\pi}{60} = 40.4323\text{ rad/s}$$
+
 2. **Velocidad Lineal de Crucero (Ruedas $R = 0.02\text{ m}$):**
    * Comandamos los motores a $\omega_{\text{crucero}} = 4.2\text{ rad/s}$ (equivalente al $\approx 10.39\%$ del PWM del convertidor a 7.8V).
    * La velocidad lineal del carrito es determinísticamente:
+
      $$v_{\text{lin}} = \omega_{\text{crucero}} \times R = 4.2\text{ rad/s} \times 0.02\text{ m} = 0.084\text{ m/s} \quad (8.4\text{ cm/s})$$
+
 3. **Constante Temporal de Celda (30 cm):**
-   $$T_{\text{celda}} = \frac{\text{CELL\_SIZE}}{v_{\text{lin}}} = \frac{0.30\text{ m}}{0.084\text{ m/s}} \approx 3.571\text{ segundos}$$
-   Cada casilla plana toma exactamente **3.57 segundos** en recorrerse.
+
+   $$T_{\text{celda}} = \frac{L_{\text{celda}}}{v_{\text{lin}}} = \frac{0.30\text{ m}}{0.084\text{ m/s}} \approx 3.571\text{ s}$$
+
+   Cada casilla plana toma exactamente **3.57 segundos** en recorrerse ($L_{\text{celda}} = 0.30\text{ m}$).
 
 #### B. Odómetro Óptico con ToF Frontal ($\Delta d$):
 * Al arrancar en una celda, el sensor VL53L1X mide la distancia inicial a la pared de enfrente:
+
   $$\Delta d = d_{\text{inicial}} - d_{\text{actual}}$$
+
 * Si hay un muro enfrente, $\Delta d$ mide el desplazamiento lineal físico directo sin tocar el piso y sin verse afectado por si la llanta patinó o no.
-* **Detención centrada:** Si el robot avanza hacia un muro frontal, sabe que en el centro de la celda de destino el muro debe quedar a **$15\text{ cm}$** ($0.15\text{ m}$). Cuando $front\_d \le 0.15\text{ m}$ y $dist\_dr \ge 0.22\text{ m}$, clava el freno: queda estacionado exactamente en el centro geométrico de la celda.
+* **Detención centrada:** Si el robot avanza hacia un muro frontal, sabe que en el centro de la celda de destino el muro debe quedar a **$15\text{ cm}$** ($0.15\text{ m}$). Cuando $d_{\text{frontal}} \le 0.15\text{ m}$ y $d_{\text{DR}} \ge 0.22\text{ m}$ (variables en código: `front_d <= 0.15` y `dist_dr >= 0.22`), clava el freno: queda estacionado exactamente en el centro geométrico de la celda.
 
 ---
 
@@ -158,11 +167,29 @@ Para evitar que el robot entre a los cruces chueco o raspando las esquinas, impl
 
 #### Ecuación del Error Lateral:
 * **Con 2 paredes laterales ($d_L < 22\text{ cm}$ y $d_R < 22\text{ cm}$):** Centrado equidistante:
+
   $$e = \frac{d_L - d_R}{2}$$
+
 * **Con 1 sola pared (Pared Izquierda):**
-  $$e = \begin{cases} d_L - 0.10 & \text{si } d_L < 0.10\text{ m} \quad (\text{empujar a la derecha para no rozar}) \\ d_L - 0.15 & \text{si } d_L > 0.15\text{ m} \quad (\text{atraer suavemente hacia la pared}) \\ 0.0 & \text{si } 0.10\text{ m} \le d_L \le 0.15\text{ m} \quad (\textbf{zona muerta: avance recto}) \end{cases}$$
+
+  $$
+  e = \begin{cases}
+  d_L - 0.10 & \text{si } d_L < 0.10\text{ m} \quad (\text{empuje a la derecha para no rozar}) \\
+  d_L - 0.15 & \text{si } d_L > 0.15\text{ m} \quad (\text{atracción suave hacia la pared}) \\
+  0.0 & \text{si } 0.10\text{ m} \le d_L \le 0.15\text{ m} \quad (\text{zona muerta: avance recto})
+  \end{cases}
+  $$
+
 * **Con 1 sola pared (Pared Derecha):**
-  $$e = \begin{cases} 0.10 - d_R & \text{si } d_R < 0.10\text{ m} \quad (\text{empujar a la izquierda para no rozar}) \\ 0.15 - d_R & \text{si } d_R > 0.15\text{ m} \quad (\text{atraer suavemente hacia la pared}) \\ 0.0 & \text{si } 0.10\text{ m} \le d_R \le 0.15\text{ m} \quad (\textbf{zona muerta: avance recto}) \end{cases}$$
+
+  $$
+  e = \begin{cases}
+  0.10 - d_R & \text{si } d_R < 0.10\text{ m} \quad (\text{empuje a la izquierda para no rozar}) \\
+  0.15 - d_R & \text{si } d_R > 0.15\text{ m} \quad (\text{atracción suave hacia la pared}) \\
+  0.0 & \text{si } 0.10\text{ m} \le d_R \le 0.15\text{ m} \quad (\text{zona muerta: avance recto})
+  \end{cases}
+  $$
+
 * **En espacio abierto ($d \ge 22\text{ cm}$):** El PID se desconecta de inmediato ($e = 0.0$) para evitar perturbaciones falsas ante puertas o cruces.
 
 <div align="center">
@@ -179,15 +206,35 @@ El giróscopo MPU-6050 económico tiene una deriva térmica que va desfasando el
 #### ¿Cómo lo solucionamos sin brújula ni GPS?
 En un laberinto ortogonal, **las paredes del pasillo siempre apuntan a los rumbos cardinales físicos exactos ($0^\circ, 90^\circ, 180^\circ, 270^\circ$)**.
 
-1. Al avanzar en un pasillo a velocidad $v = 0.084\text{ m/s}$, el robot registra la evolución en el tiempo de la métrica lateral $m$:
-   $$m = \begin{cases} \frac{d_L - d_R}{2} & \text{si hay 2 paredes} \\ d_L & \text{si hay pared izquierda} \\ -d_R & \text{si hay pared derecha} \end{cases}$$
+1. Al avanzar en un pasillo a velocidad constante $v = 0.084\text{ m/s}$, el robot registra la evolución en el tiempo de la métrica lateral $m$:
+
+   $$
+   m = \begin{cases}
+   \frac{d_L - d_R}{2} & \text{si hay 2 paredes} \\
+   d_L & \text{si hay pared izquierda} \\
+   -d_R & \text{si hay pared derecha}
+   \end{cases}
+   $$
+
 2. Sobre una ventana temporal $\Delta t$ ($\Delta s = v \cdot \Delta t$):
-   $$\theta_{\text{walls}} = -\frac{1}{v} \frac{dm}{dt} = -\frac{m(t) - m(t - \Delta t)}{\Delta s}$$
-   $\theta_{\text{walls}}$ es el **ángulo físico real** del carrito respecto al eje longitudinal de las paredes.
-3. La diferencia entre lo que dice el giróscopo (`current_yaw`) y la orientación física real de la pared es la **deriva pura del IMU**:
-   $$\epsilon_{\text{drift}} = \text{normalize\_angle}(\text{current\_yaw} - \text{target\_yaw} - \theta_{\text{walls}})$$
-4. En cada ciclo de simulación, el robot absorbe suavemente esta deriva en su sesgo (`yaw_offset`):
-   $$\text{yaw\_offset} \leftarrow \text{yaw\_offset} + 0.035 \cdot \epsilon_{\text{drift}}$$
+
+   $$
+   \theta_{\text{walls}} = -\frac{1}{v} \frac{dm}{dt} = -\frac{m(t) - m(t - \Delta t)}{\Delta s}
+   $$
+
+   donde $\theta_{\text{walls}}$ es el **ángulo físico real** del carrito respecto al eje longitudinal de las paredes.
+
+3. La diferencia entre lo que reporta el giróscopo (`current_yaw` o $\psi_{\text{imu}}$) y la orientación física real de la pared ($\psi_{\text{meta}} + \theta_{\text{walls}}$) es la **deriva pura del IMU** ($\epsilon_{\text{deriva}}$):
+
+   $$
+   \epsilon_{\text{deriva}} = \operatorname{wrap}\left(\psi_{\text{imu}} - \psi_{\text{meta}} - \theta_{\text{walls}}\right)
+   $$
+
+4. En cada ciclo de simulación, el robot absorbe suavemente esta deriva en su sesgo (`yaw_offset` o $\psi_{\text{offset}}$):
+
+   $$
+   \psi_{\text{offset}} \leftarrow \psi_{\text{offset}} + 0.035 \cdot \epsilon_{\text{deriva}}
+   $$
 
 **Efecto:** Conforme el carrito recorre un pasillo, su orientación interna se autocalibra continuamente con las paredes. Al llegar a la intersección, la deriva acumulada es prácticamente cero ($< 1.5^\circ$), asegurando giros impecables a $90.0^\circ$ y entradas perfectamente centradas.
 
@@ -289,9 +336,11 @@ Al llegar al centro de cualquier casilla (estado `DECIDE`), el robot detiene los
 * **ToF Derecho (VL53L0X):** Evalúa el camino a la derecha ($(heading - 90^\circ) \pmod{360}$).
 * **ToF Izquierdo (VL53L0X):** Evalúa el camino a la izquierda ($(heading + 90^\circ) \pmod{360}$).
 
-**Criterio de Pasaje Libre:**
-$$\text{Si } d_{\text{ToF}} > \text{NEIGHBOR\_WALL\_THRESHOLD } (0.28\text{ m}) \implies \textbf{Pasaje Abierto (Vecino Válido)}$$
-$$\text{Si } d_{\text{ToF}} \le 0.28\text{ m} \implies \textbf{Pared Detectada (Camino Bloqueado)}$$
+**Criterio de Pasaje Libre (Umbral `NEIGHBOR_WALL_THRESHOLD = 0.28 m`):**
+
+$$\text{Si } d_{\text{ToF}} > 0.28\text{ m} \implies \text{Pasaje Abierto (Vecino Válido)}$$
+
+$$\text{Si } d_{\text{ToF}} \le 0.28\text{ m} \implies \text{Pared Detectada (Camino Bloqueado)}$$
 
 *¿Por qué 28 cm?* Porque en una celda de $30\text{ cm}$, si el robot está centrado a $15\text{ cm}$ del muro, un muro en la casilla actual mide $\approx 15\text{ cm}$ ($< 28\text{ cm}$), mientras que una casilla abierta mide al menos $15\text{ cm} + 30\text{ cm} = 45\text{ cm}$ ($> 28\text{ cm}$). El margen de separación es de más de $30\text{ cm}$, garantizando cero falsos positivos.
 

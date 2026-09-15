@@ -476,5 +476,5 @@ python scripts/generate_plots.py
 ---
 
 <div align="center">
-  <b>Desarrollado con ingenio, matemáticas aplicadas y pasión por la robótica Sim2Real.</b>
+  <b>Desarrollado por Enigma Seteki.</b>
 </div>

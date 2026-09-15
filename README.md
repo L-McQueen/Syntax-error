@@ -124,28 +124,29 @@ Como no tenemos encoders de rueda, creamos un sistema de odometría redundante b
 ```
 
 #### A. Modelo Eléctrico de los Motores N20:
-1. **Velocidad Angular Máxima a 7.8V:**
 
-   $$\text{RPM}_{7.8\text{V}} = 297.0 \times \left(\frac{7.8\text{ V}}{6.0\text{ V}}\right) = 386.1\text{ RPM}$$
+**1. Velocidad Angular Máxima a 7.8V:**
 
-   $$\omega_{\text{max}} = 386.1 \times \frac{2\pi}{60} = 40.4323\text{ rad/s}$$
+$$\text{RPM}_{7.8\text{V}} = 297.0 \times \left(\frac{7.8\text{ V}}{6.0\text{ V}}\right) = 386.1\text{ RPM}$$
 
-2. **Velocidad Lineal de Crucero (Ruedas $R = 0.02\text{ m}$):**
-   * Comandamos los motores a $\omega_{\text{crucero}} = 4.2\text{ rad/s}$ (equivalente al $\approx 10.39\%$ del PWM del convertidor a 7.8V).
-   * La velocidad lineal del carrito es determinísticamente:
+$$\omega_{\text{max}} = 386.1 \times \frac{2\pi}{60} = 40.4323\text{ rad/s}$$
 
-     $$v_{\text{lin}} = \omega_{\text{crucero}} \times R = 4.2\text{ rad/s} \times 0.02\text{ m} = 0.084\text{ m/s} \quad (8.4\text{ cm/s})$$
+**2. Velocidad Lineal de Crucero (Ruedas $R = 0.02\text{ m}$):**
+* Comandamos los motores a $\omega_{\text{crucero}} = 4.2\text{ rad/s}$ (equivalente al $\approx 10.39\%$ del PWM del convertidor a 7.8V).
+* La velocidad lineal del carrito es determinísticamente:
 
-3. **Constante Temporal de Celda (30 cm):**
+$$v_{\text{lin}} = \omega_{\text{crucero}} \times R = 4.2\text{ rad/s} \times 0.02\text{ m} = 0.084\text{ m/s} \quad (8.4\text{ cm/s})$$
 
-   $$T_{\text{celda}} = \frac{L_{\text{celda}}}{v_{\text{lin}}} = \frac{0.30\text{ m}}{0.084\text{ m/s}} \approx 3.571\text{ s}$$
+**3. Constante Temporal de Celda (30 cm):**
 
-   Cada casilla plana toma exactamente **3.57 segundos** en recorrerse ($L_{\text{celda}} = 0.30\text{ m}$).
+$$T_{\text{celda}} = \frac{L_{\text{celda}}}{v_{\text{lin}}} = \frac{0.30\text{ m}}{0.084\text{ m/s}} \approx 3.571\text{ s}$$
+
+Cada casilla plana toma exactamente **3.57 segundos** en recorrerse ($L_{\text{celda}} = 0.30\text{ m}$).
 
 #### B. Odómetro Óptico con ToF Frontal ($\Delta d$):
 * Al arrancar en una celda, el sensor VL53L1X mide la distancia inicial a la pared de enfrente:
 
-  $$\Delta d = d_{\text{inicial}} - d_{\text{actual}}$$
+$$\Delta d = d_{\text{inicial}} - d_{\text{actual}}$$
 
 * Si hay un muro enfrente, $\Delta d$ mide el desplazamiento lineal físico directo sin tocar el piso y sin verse afectado por si la llanta patinó o no.
 * **Detención centrada:** Si el robot avanza hacia un muro frontal, sabe que en el centro de la celda de destino el muro debe quedar a **$15\text{ cm}$** ($0.15\text{ m}$). Cuando $d_{\text{frontal}} \le 0.15\text{ m}$ y $d_{\text{DR}} \ge 0.22\text{ m}$ (variables en código: `front_d <= 0.15` y `dist_dr >= 0.22`), clava el freno: queda estacionado exactamente en el centro geométrico de la celda.
@@ -166,31 +167,32 @@ Para evitar que el robot entre a los cruces chueco o raspando las esquinas, impl
 ```
 
 #### Ecuación del Error Lateral:
-* **Con 2 paredes laterales ($d_L < 22\text{ cm}$ y $d_R < 22\text{ cm}$):** Centrado equidistante:
 
-  $$e = \frac{d_L - d_R}{2}$$
+**A. Con 2 paredes laterales ($d_L < 22\text{ cm}$ y $d_R < 22\text{ cm}$):** Centrado equidistante simétrico:
 
-* **Con 1 sola pared (Pared Izquierda):**
+$$e = \frac{d_L - d_R}{2}$$
 
-  $$
-  e = \begin{cases}
-  d_L - 0.10 & \text{si } d_L < 0.10\text{ m} \quad (\text{empuje a la derecha para no rozar}) \\
-  d_L - 0.15 & \text{si } d_L > 0.15\text{ m} \quad (\text{atracción suave hacia la pared}) \\
-  0.0 & \text{si } 0.10\text{ m} \le d_L \le 0.15\text{ m} \quad (\text{zona muerta: avance recto})
-  \end{cases}
-  $$
+**B. Con 1 sola pared (Pared Izquierda):**
 
-* **Con 1 sola pared (Pared Derecha):**
+$$
+e = \begin{cases}
+d_L - 0.10 & \text{si } d_L < 0.10\text{ m} \quad (\text{empuje a la derecha para no rozar}) \\\\
+d_L - 0.15 & \text{si } d_L > 0.15\text{ m} \quad (\text{atracción suave hacia la pared}) \\\\
+0.0 & \text{si } 0.10\text{ m} \le d_L \le 0.15\text{ m} \quad (\text{zona muerta: avance recto})
+\end{cases}
+$$
 
-  $$
-  e = \begin{cases}
-  0.10 - d_R & \text{si } d_R < 0.10\text{ m} \quad (\text{empuje a la izquierda para no rozar}) \\
-  0.15 - d_R & \text{si } d_R > 0.15\text{ m} \quad (\text{atracción suave hacia la pared}) \\
-  0.0 & \text{si } 0.10\text{ m} \le d_R \le 0.15\text{ m} \quad (\text{zona muerta: avance recto})
-  \end{cases}
-  $$
+**C. Con 1 sola pared (Pared Derecha):**
 
-* **En espacio abierto ($d \ge 22\text{ cm}$):** El PID se desconecta de inmediato ($e = 0.0$) para evitar perturbaciones falsas ante puertas o cruces.
+$$
+e = \begin{cases}
+0.10 - d_R & \text{si } d_R < 0.10\text{ m} \quad (\text{empuje a la izquierda para no rozar}) \\\\
+0.15 - d_R & \text{si } d_R > 0.15\text{ m} \quad (\text{atracción suave hacia la pared}) \\\\
+0.0 & \text{si } 0.10\text{ m} \le d_R \le 0.15\text{ m} \quad (\text{zona muerta: avance recto})
+\end{cases}
+$$
+
+**D. En espacio abierto ($d \ge 22\text{ cm}$):** El PID se desconecta de inmediato ($e = 0.0$) para evitar perturbaciones falsas ante puertas o cruces.
 
 <div align="center">
   <img src="docs/images/lateral_wall_pid_behavior.png" alt="Comportamiento PID Lateral" width="85%">
@@ -206,35 +208,41 @@ El giróscopo MPU-6050 económico tiene una deriva térmica que va desfasando el
 #### ¿Cómo lo solucionamos sin brújula ni GPS?
 En un laberinto ortogonal, **las paredes del pasillo siempre apuntan a los rumbos cardinales físicos exactos ($0^\circ, 90^\circ, 180^\circ, 270^\circ$)**.
 
-1. Al avanzar en un pasillo a velocidad constante $v = 0.084\text{ m/s}$, el robot registra la evolución en el tiempo de la métrica lateral $m$:
+#### Procedimiento de Estimación y Compensación:
 
-   $$
-   m = \begin{cases}
-   \frac{d_L - d_R}{2} & \text{si hay 2 paredes} \\
-   d_L & \text{si hay pared izquierda} \\
-   -d_R & \text{si hay pared derecha}
-   \end{cases}
-   $$
+**Paso 1: Evolución temporal de la métrica lateral $m$**  
+Al avanzar en un pasillo a velocidad constante $v = 0.084\text{ m/s}$, el robot registra la evolución en el tiempo de la métrica lateral $m$:
 
-2. Sobre una ventana temporal $\Delta t$ ($\Delta s = v \cdot \Delta t$):
+$$
+m = \begin{cases}
+\frac{d_L - d_R}{2} & \text{si hay 2 paredes} \\\\
+d_L & \text{si hay pared izquierda} \\\\
+-d_R & \text{si hay pared derecha}
+\end{cases}
+$$
 
-   $$
-   \theta_{\text{walls}} = -\frac{1}{v} \frac{dm}{dt} = -\frac{m(t) - m(t - \Delta t)}{\Delta s}
-   $$
+**Paso 2: Estimación del ángulo físico con los muros ($\theta_{\text{walls}}$)**  
+Sobre una ventana temporal $\Delta t$ ($\Delta s = v \cdot \Delta t$):
 
-   donde $\theta_{\text{walls}}$ es el **ángulo físico real** del carrito respecto al eje longitudinal de las paredes.
+$$
+\theta_{\text{walls}} = -\frac{1}{v} \frac{dm}{dt} = -\frac{m(t) - m(t - \Delta t)}{\Delta s}
+$$
 
-3. La diferencia entre lo que reporta el giróscopo (`current_yaw` o $\psi_{\text{imu}}$) y la orientación física real de la pared ($\psi_{\text{meta}} + \theta_{\text{walls}}$) es la **deriva pura del IMU** ($\epsilon_{\text{deriva}}$):
+donde $\theta_{\text{walls}}$ es el **ángulo físico real** del carrito respecto al eje longitudinal de las paredes.
 
-   $$
-   \epsilon_{\text{deriva}} = \operatorname{wrap}\left(\psi_{\text{imu}} - \psi_{\text{meta}} - \theta_{\text{walls}}\right)
-   $$
+**Paso 3: Cálculo de la deriva instantánea del IMU ($\epsilon_{\text{deriva}}$)**  
+La diferencia entre lo que reporta el giróscopo (`current_yaw` o $\psi_{\text{imu}}$) y la orientación física real de la pared ($\psi_{\text{meta}} + \theta_{\text{walls}}$) es la **deriva pura del IMU** ($\epsilon_{\text{deriva}}$):
 
-4. En cada ciclo de simulación, el robot absorbe suavemente esta deriva en su sesgo (`yaw_offset` o $\psi_{\text{offset}}$):
+$$
+\epsilon_{\text{deriva}} = \operatorname{wrap}\left(\psi_{\text{imu}} - \psi_{\text{meta}} - \theta_{\text{walls}}\right)
+$$
 
-   $$
-   \psi_{\text{offset}} \leftarrow \psi_{\text{offset}} + 0.035 \cdot \epsilon_{\text{deriva}}
-   $$
+**Paso 4: Compensación continua en vivo (`yaw_offset` o $\psi_{\text{offset}}$)**  
+En cada ciclo de simulación, el robot absorbe suavemente esta deriva en su sesgo (`yaw_offset` o $\psi_{\text{offset}}$):
+
+$$
+\psi_{\text{offset}} \leftarrow \psi_{\text{offset}} + 0.035 \cdot \epsilon_{\text{deriva}}
+$$
 
 **Efecto:** Conforme el carrito recorre un pasillo, su orientación interna se autocalibra continuamente con las paredes. Al llegar a la intersección, la deriva acumulada es prácticamente cero ($< 1.5^\circ$), asegurando giros impecables a $90.0^\circ$ y entradas perfectamente centradas.
 
@@ -250,7 +258,9 @@ En un laberinto ortogonal, **las paredes del pasillo siempre apuntan a los rumbo
 El laberinto incluye rampas y desniveles. Cuando el robot comienza a subir una rampa:
 * El cabeceo del chasis (Pitch) apunta el sensor frontal hacia el suelo o hacia el techo, distorsionando las lecturas ToF.
 * Implementamos un filtro pasa-bajas IIR en el ángulo de Pitch del IMU:
-  $$\text{Pitch}_{\text{filtrado}} = 0.2 \cdot \text{Pitch}_{\text{raw}} + 0.8 \cdot \text{Pitch}_{\text{previo}}$$
+
+$$\text{Pitch}_{\text{filtrado}} = 0.2 \cdot \text{Pitch}_{\text{raw}} + 0.8 \cdot \text{Pitch}_{\text{previo}}$$
+
 * **Máquina de estados de terreno:**
   - `FLAT` $\rightarrow$ si $\text{Pitch} > 10^\circ \implies$ conmutar a `UP` (subiendo rampa).
   - `UP` $\rightarrow$ al superar la cúspide y nivelarse $\implies$ conmutar a `DOWN` / `FLAT`.

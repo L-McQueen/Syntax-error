@@ -211,43 +211,129 @@ El laberinto incluye rampas y desniveles. Cuando el robot comienza a subir una r
 
 ---
 
-## 🧠 Algoritmo de Exploración (DFS con Hilo de Oro) y Retorno a Base
+---
 
-El robot navega usando una Búsqueda en Profundidad (**DFS**) modelada como una máquina de estados finitos (FSM):
+## 🏆 Contexto de la Competencia: Pista A (MAZE) - Candidates 2026 (RoBorregos)
+
+Este software y arquitectura fueron diseñados y optimizados específicamente para cumplir con el reglamento oficial de la categoría **Principiantes** en el torneo **Candidates 2026**, organizado por el equipo de robótica **RoBorregos** del **Tecnológico de Monterrey**:
+
+### 1. Especificaciones de la Pista A (MAZE):
+* **Dimensiones:** Laberinto modular de **$5 \times 5$ Unidades** (cada casilla mide **$30 \times 30 \pm 2\text{ cm}$**).
+* **Paredes:** Muros modulares con una altura mínima de **$15\text{ cm}$**.
+* **Punto de Inicio y Meta:** Comienza en la baldosa **VERDE** $(0, 0)$ y concluye en la baldosa **ROJA** (meta / checkpoint final).
+* **Obstáculos en Pista:**
+  - Hasta **1 rampa** (pendiente de $15^\circ$ con meseta de $30\text{ cm}$).
+  - Hasta **3 escaleras** ($0.5\text{ cm}$ por peldaño).
+  - Hasta **4 speedbumps** ($6\text{ mm}$ de altura).
+* **Tiempo Límite:** **8 minutos totales** por pista (los primeros 2 minutos para calibración en cancha y los **6 minutos restantes** de ronda 100% autónoma).
+* **Criterio de Desempate:** En caso de empate en puntuación, gana el equipo que haya completado la pista en el **menor tiempo empleado**.
+
+### 2. Tabla Oficial de Puntuación (Pista A):
+| Acción o Desafío | Puntos Otorgados | Estrategia de Nuestro Robot |
+|---|:---:|---|
+| **Checkpoint Final (Baldosa Roja)** | **25 pts** | Localizado por la cámara PixyMon (segmentación de color en picada). |
+| **BONUS 1: Retorno por el mismo camino al inicio** | **35 pts** | Desempila la ruta LIFO (`route_stack`) en orden inverso hasta $(0, 0)$. |
+| **BONUS 2: Detección y despliegue de ArUco en pared** | **30 pts** | Webcam USB con OpenCV detecta `DICT_4X4_50` y muestra el ID en LCD $\ge 3\text{ s}$. |
+| **Superar Rampa (subir y bajar)** | **20 pts** | Filtro IIR de Pitch conmuta modo `UP`/`DOWN` con empuje de $4.5\text{ rad/s}$. |
+| **Superar Escaleras (máx. 3)** | **15 pts c/u** | Tracción y torque de reductoras N20 100:1 a $7.8\text{ V}$. |
+| **Detección de Colores en el suelo (máx. 4)** | **5 pts c/u** | Clasificación en tiempo real reportada visualmente en pantalla LCD. |
+| **Superar Speedbumps (máx. 4)** | **5 pts c/u** | Amortiguación y avance firme a $8.4\text{ cm/s}$. |
+
+> **Puntuación Máxima Potencial:** **$> 130$ puntos**.
+
+### 3. Restricciones y Prohibiciones Estrictas del Reglamento:
+* 🚫 **Pre-mapeo Prohibido:** No se permite memorizar ni precargar el laberinto. Todo debe descubrirse y mapearse **en tiempo real**.
+* 🚫 **Emisión de Sonido Prohibida:** El reglamento prohíbe timbres o *buzzers*. Toda confirmación debe ser **100% visual** (por eso incluimos la pantalla LCD I2C).
+* 🚫 **Telemetría Externa Prohibida:** Queda prohibido enviar datos por Bluetooth, Wi-Fi o cable serial a una computadora durante la ronda. El ID del ArUco **debe mostrarse obligatoriamente en la pantalla del propio robot durante al menos 3 segundos continuos**.
+* 📏 **Dimensiones del Robot:** Debe caber dentro de una Unidad ($30 \times 30 \times 30\text{ cm}$). Nuestro diseño es ultracompacto ($8 \times 8\text{ cm}$ de chasis), dejando amplio margen de maniobra en pasillos de $30\text{ cm}$.
+
+---
+
+## 🧠 ¿Cómo Funciona el Algoritmo de Navegación? (Paso a Paso)
+
+El cerebro del robot está modelado como una **Máquina de Estados Finitos (FSM)** integrada con un algoritmo de **Búsqueda en Profundidad (DFS)** con memoria de pila (el principio del "Hilo de Ariadna / Hilo de Oro"):
 
 ```mermaid
 stateDiagram-v2
-    [*] --> CALIBRATE : Encendido (3s)
-    CALIBRATE --> SCAN : IMU y offsets listos
+    [*] --> CALIBRATE : Encendido e inicio de ronda
+    CALIBRATE --> SCAN : IMU y offsets estabilizados
     
-    SCAN --> RETURN_HOME : ¡Baldosa Roja Detectada!
-    SCAN --> DECIDE : Escaneo de Pasajes Libres
+    SCAN --> RETURN_HOME : ¡Baldosa Roja Detectada! (Meta)
+    SCAN --> DECIDE : Celda Segura, Escanear Caminos
     
-    DECIDE --> TURN : Rumbo Seleccionado / Backtrack
-    DECIDE --> FINISHED : Laberinto Explorador Agotado
+    DECIDE --> TURN : Rumbo Seleccionado (DFS / Backtrack)
+    DECIDE --> FINISHED : Laberinto Totalmente Agotado
     
     TURN --> SETTLE : Rumbo Alcanzado (|error| < 2.3°)
-    SETTLE --> MOVE : Chasis Estabilizado (200ms)
+    SETTLE --> MOVE : Chasis y Balanceo Nivelados (200ms)
     
-    MOVE --> BACKUP : Muro Frontal < 10 cm
+    MOVE --> BACKUP : Muro Frontal Cercano (< 10 cm)
     MOVE --> SCAN : 30 cm Recorridos / Centro de Celda
     
-    BACKUP --> SCAN : Despeje Seguro (15 cm)
+    BACKUP --> SCAN : Despeje Seguro a 15 cm
     
-    RETURN_HOME --> TURN : Desempilar Ruta (Hilo de Oro)
-    RETURN_HOME --> FINISHED : Estacionado en (0, 0)
+    RETURN_HOME --> TURN : Desempilar Ruta Inversa (Bonus 1)
+    RETURN_HOME --> FINISHED : Aparcado en (0, 0)
 ```
 
-1. **Prioridad de Exploración:**
-   En cada celda escanea con los ToF: 1° Recto, 2° Derecha, 3° Izquierda. Si los 3 lados están bloqueados en la celda de inicio $(0, 0)$, gira $180^\circ$ para explorar la retaguardia.
-2. **Pila LIFO (El Hilo de Oro):**
-   Almacena las celdas visitadas en `route_stack`. Cuando llega a un callejón sin salida (*dead-end*), desempila la ruta para regresar ordenadamente a la última intersección con caminos pendientes (*backtracking*).
-3. **Retorno Triunfal (`RETURN_HOME`):**
-   En cuanto la cámara PixyMon detecta el color rojo de la meta, el robot interrumpe la exploración y desempila paso a paso la ruta inversa exacta hasta aparcar de forma autónoma y segura en $(0, 0)$.
+### 1. El Grafo Topológico en Tiempo Real (Sin Pre-Mapeo)
+El robot no conoce el laberinto al iniciar. Conforme avanza, construye un **grafo de cuadrícula relativa** donde la casilla verde de salida se define como el origen $(0, 0)$ con orientación de rumbo $0^\circ$:
+$$\text{Rumbo } 0^\circ \implies (\Delta x = +1, \Delta y = 0) \quad [\text{Norte / Adelante}]$$
+$$\text{Rumbo } 90^\circ \implies (\Delta x = 0, \Delta y = +1) \quad [\text{Este / Izquierda}]$$
+$$\text{Rumbo } 180^\circ \implies (\Delta x = -1, \Delta y = 0) \quad [\text{Sur / Atrás}]$$
+$$\text{Rumbo } 270^\circ \implies (\Delta x = 0, \Delta y = -1) \quad [\text{Oeste / Derecha}]$$
+
+### 2. Detección de Muros y Vecinos (`DECIDE`)
+Al llegar al centro de cualquier casilla (estado `DECIDE`), el robot detiene los motores y dispara una ráfaga con los sensores láser ToF (filtrados por mediana móvil de 5 muestras):
+* **ToF Frontal (VL53L1X):** Evalúa el camino recto.
+* **ToF Derecho (VL53L0X):** Evalúa el camino a la derecha ($(heading - 90^\circ) \pmod{360}$).
+* **ToF Izquierdo (VL53L0X):** Evalúa el camino a la izquierda ($(heading + 90^\circ) \pmod{360}$).
+
+**Criterio de Pasaje Libre:**
+$$\text{Si } d_{\text{ToF}} > \text{NEIGHBOR\_WALL\_THRESHOLD } (0.28\text{ m}) \implies \textbf{Pasaje Abierto (Vecino Válido)}$$
+$$\text{Si } d_{\text{ToF}} \le 0.28\text{ m} \implies \textbf{Pared Detectada (Camino Bloqueado)}$$
+
+*¿Por qué 28 cm?* Porque en una celda de $30\text{ cm}$, si el robot está centrado a $15\text{ cm}$ del muro, un muro en la casilla actual mide $\approx 15\text{ cm}$ ($< 28\text{ cm}$), mientras que una casilla abierta mide al menos $15\text{ cm} + 30\text{ cm} = 45\text{ cm}$ ($> 28\text{ cm}$). El margen de separación es de más de $30\text{ cm}$, garantizando cero falsos positivos.
+
+### 3. Prioridad de Exploración Determinista
+Si existen varios caminos abiertos que no han sido visitados (`(nx, ny) not in visited`), el robot toma el primer camino disponible siguiendo la prioridad:
+1. **Frente** (mantener el flujo hacia adelante).
+2. **Derecha** (girar a la derecha).
+3. **Izquierda** (girar a la izquierda).
+4. **Retaguardia (180°):** Exclusiva para la celda de inicio $(0, 0)$ en caso de que las 3 direcciones frontales y laterales comiencen bloqueadas por paredes.
+
+### 4. Gestión de Callejones sin Salida (*Dead-Ends* y *Backtracking*)
+Si el robot llega a una celda donde todos los caminos abiertos ya fueron visitados o están tapados por paredes:
+1. Detecta que está en un callejón sin salida (*dead-end*).
+2. Extrae la casilla actual de la pila: `dead_end = route_stack.pop()`.
+3. Consulta la casilla padre previa en la pila: `parent = route_stack[-1]`.
+4. Calcula automáticamente el ángulo exacto para regresar: `heading = get_heading_to_target(curr, parent)`.
+5. Comuta al estado `TURN`, gira y retrocede ordenadamente paso a paso hasta encontrar una bifurcación con ramas inexploradas.
+
+### 5. Cómo se Conquista el BONUS 1 (Retorno Exacto por el Mismo Camino)
+El reglamento premia con **35 puntos** si el robot regresa desde la meta hasta la casilla inicial pasando exactamente por las mismas celdas en orden inverso:
+* En cuanto la cámara PixyMon detecta el color rojo (`found_red_goal = True`), el robot detiene la exploración.
+* La pila `route_stack` contiene la **secuencia matemática perfecta** de celdas recorridas desde $(0, 0)$ hasta la meta.
+* El estado `RETURN_HOME` simplemente hace:
+  ```python
+  curr = route_stack.pop()
+  target = route_stack[-1]
+  target_heading = get_heading_to_target(curr, target)
+  ```
+* El carro desanda el camino paso a paso sin vacilaciones, ignorando bifurcaciones abiertas, hasta llegar a $(0, 0)$ y proclamar la victoria con los 35 puntos del bonus en la bolsa.
+
+### 6. Cómo se Conquista el BONUS 2 (Reconocimiento ArUco $\ge 3$ Segundos)
+* Un hilo asíncrono en segundo plano (`VisionProcessor`) captura cuadros de la webcam USB en paralelo al ciclo motriz de 32 ms.
+* Aplica el detector `cv2.aruco.ArucoDetector` con el diccionario `DICT_4X4_50`.
+* Al detectar un marcador en la pared:
+  1. Extrae el ID del marcador.
+  2. Actualiza la variable compartida bajo candado `threading.Lock()`.
+  3. Muestra en la pantalla LCD I2C: `[ARUCO DETECTADO! ID: XX]`.
+  4. Fija un temporizador de persistencia: `aruco_clear_time = t + 3.5s`, garantizando que el ID permanezca visible en la pantalla por **más de 3 segundos continuos**, tal como exige el juez del reglamento.
 
 <div align="center">
   <img src="docs/images/trajectory_and_odometry.png" alt="Mapeo Topológico y Retorno a Casa" width="60%">
-  <p><i>Figura 3: Trayectoria 2D del robot mapeando celdas, alcanzando la meta roja y retornando exactamente a la base (0, 0).</i></p>
+  <p><i>Figura 3: Trayectoria 2D del robot mapeando celdas con DFS, alcanzando la meta roja y retornando exactamente a la base (0, 0).</i></p>
 </div>
 
 ---

@@ -1,7 +1,7 @@
 <div align="center">
   <h1>🤖 Webots Sim2Real Maze Solver</h1>
   <p><strong>Navegación autónoma en laberintos con arquitectura distribuida, visión híbrida, odometría óptica ToF, control lateral PID (10-15 cm) y calibración inercial en vivo.</strong></p>
-  <p><i>¡Probando toda la matemática y el control en simulación antes de quemar componentes en el hardware real!</i></p>
+  <p><i>No podemos quemar nada xdddd </i></p>
 
   <p>
     <img src="https://img.shields.io/badge/Webots-R2023b-blue.svg" alt="Webots">

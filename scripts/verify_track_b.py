@@ -102,7 +102,7 @@ def verify_track_b():
         print("[OK] Seccion 2 (White Lines): Cintas blancas de 0.02m con apertura libre aleatoria de 0.30m.")
         print("[OK] Seccion 3 (Color Maze): Camino dinamico con codificacion estricta de giros (Cyan/Amarillo/Naranja/Magenta).")
         print("[OK] Muro Perimetral: Altura 0.15m continua sin fugas alrededor de todo el contorno.")
-        print("[OK] Sim2RealRobot: Teletransportado a INICIO (0, -1) orientado al Norte (+Y).")
+        print("[OK] Sim2RealRobot: Teletransportado a la Casilla Verde inicial dentro de la cuadricula 3x3.")
         return 0
     else:
         print("[ERROR] La verificación no concluyó dentro del tiempo esperado.")

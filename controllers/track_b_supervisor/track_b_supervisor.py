@@ -85,6 +85,7 @@ class TrackBSupervisor(Supervisor):
         self.track_cells = {}
         self.ball_node = None
         self.robot_node = None
+        self.start_cell = None
 
         self.define_track_layout()
         self.build_track()
@@ -101,24 +102,55 @@ class TrackBSupervisor(Supervisor):
         self.children_field.importMFNodeFromString(-1, vrml_string)
 
     def define_track_layout(self):
-        """Define la topología de todas las celdas de la Pista B."""
-        # 1. Casilla de Inicio (gx=0, gy=-1) - Verde claro
-        self.track_cells[(0, -1)] = {
-            "type": "START",
-            "color": [0.3, 0.85, 0.3],
-            "name": "tile_start",
-            "label": "INICIO"
-        }
+        """
+        Define la topología de todas las celdas de la Pista B.
+        La Casilla Verde (INICIO) puede ubicarse en cualquier posición
+        de la cuadrícula inicial 3x3 (Sección 1), excluyendo el centro (1, 1).
+        """
+        # Candidatas para la Casilla Verde en la cuadrícula 3x3 inicial (gx=0..2, gy=0..2)
+        s1_candidates = [
+            (0, 0), (1, 0), (2, 0),
+            (0, 1),         (2, 1),
+            (0, 2), (1, 2), (2, 2)
+        ]
 
-        # 2. Sección 1: Trampa de la Pelota (3x3 celdas blancas: gx=0..2, gy=0..2)
+        is_fixed = (os.environ.get("TRACK_B_FIXED") == "1")
+        env_start = os.environ.get("TRACK_B_START_CELL")
+        if env_start:
+            parts = [int(p.strip()) for p in env_start.split(",")]
+            self.start_cell = (parts[0], parts[1])
+        elif is_fixed:
+            self.start_cell = (0, 0)
+        else:
+            self.start_cell = random.choice(s1_candidates)
+
+        log(f"[S1 INICIO] Casilla Verde (INICIO) ubicada en: {self.start_cell} dentro del 3x3 inicial.")
+
+        # 1. Sección 1: Trampa de la Pelota (3x3 celdas: gx=0..2, gy=0..2)
         for gx in range(0, 3):
             for gy in range(0, 3):
-                self.track_cells[(gx, gy)] = {
-                    "type": "S1_TRAP",
-                    "color": [0.95, 0.95, 0.95],
-                    "name": f"tile_s1_{gx}_{gy}",
-                    "label": "BALL_CENTER" if (gx == 1 and gy == 1) else ""
-                }
+                cell = (gx, gy)
+                if cell == self.start_cell:
+                    self.track_cells[cell] = {
+                        "type": "START",
+                        "color": [0.3, 0.85, 0.3],  # Verde claro reglamentario
+                        "name": f"tile_start_{gx}_{gy}",
+                        "label": "INICIO"
+                    }
+                elif cell == (1, 1):
+                    self.track_cells[cell] = {
+                        "type": "S1_BALL_CENTER",
+                        "color": [0.95, 0.95, 0.95],
+                        "name": f"tile_s1_{gx}_{gy}",
+                        "label": "BALL_CENTER"
+                    }
+                else:
+                    self.track_cells[cell] = {
+                        "type": "S1_TRAP",
+                        "color": [0.95, 0.95, 0.95],
+                        "name": f"tile_s1_{gx}_{gy}",
+                        "label": ""
+                    }
 
         # 3. Checkpoint 1 (Rojo): Conecta salida de S1 (2, 1) con S2 (4, 1)
         self.track_cells[(3, 1)] = {
@@ -482,18 +514,25 @@ class TrackBSupervisor(Supervisor):
                     robot_node = node
                     break
 
-        if robot_node:
+        if robot_node and self.start_cell:
             self.robot_node = robot_node
-            sx, sy = grid_to_world(0, -1)
+            gx, gy = self.start_cell
+            sx, sy = grid_to_world(gx, gy)
             trans_field = robot_node.getField("translation")
             trans_field.setSFVec3f([sx, sy, 0.03])
             rot_field = robot_node.getField("rotation")
-            # Orientado hacia el Norte (+Y): 90° alrededor del eje Z
-            rot_field.setSFRotation([0, 0, 1, 1.5707963])
+            # Orientado hacia el centro de la trampa (1, 1)
+            dx = 1.0 - gx
+            dy = 1.0 - gy
+            if abs(dx) > 1e-4 or abs(dy) > 1e-4:
+                yaw = math.atan2(dy, dx)
+            else:
+                yaw = 1.5707963  # Norte (+Y)
+            rot_field.setSFRotation([0, 0, 1, yaw])
             robot_node.resetPhysics()
-            log(f"[ROBOT] Sim2RealRobot teletransportado a INICIO (gx=0, gy=-1) -> ({sx:.3f}, {sy:.3f}, 0.030) mirando al Norte (+Y).")
+            log(f"[ROBOT] Sim2RealRobot teletransportado a INICIO {self.start_cell} -> ({sx:.3f}, {sy:.3f}, 0.030) rumbo {math.degrees(yaw):.1f}°.")
         else:
-            log("[WARN] No se encontró el nodo Sim2RealRobot para teletransportación.")
+            log("[WARN] No se encontró el nodo Sim2RealRobot o self.start_cell para teletransportación.")
 
     def run(self):
         """Ciclo de supervisión, física y telemetría."""

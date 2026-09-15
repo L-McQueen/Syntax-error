@@ -104,14 +104,13 @@ class TrackBSupervisor(Supervisor):
     def define_track_layout(self):
         """
         Define la topología de todas las celdas de la Pista B.
-        La Casilla Verde (INICIO) puede ubicarse en cualquier posición
-        de la cuadrícula inicial 3x3 (Sección 1), excluyendo el centro (1, 1).
+        La Casilla Verde (INICIO) se ubica estrictamente FUERA de la cuadrícula 3x3 inicial,
+        conectando hacia el interior por la fila inferior (gy=-1).
+        Todas las 9 casillas de la Sección 1 (3x3) son blancas con la pelota en el centro (1, 1).
         """
-        # Candidatas para la Casilla Verde en la cuadrícula 3x3 inicial (gx=0..2, gy=0..2)
-        s1_candidates = [
-            (0, 0), (1, 0), (2, 0),
-            (0, 1),         (2, 1),
-            (0, 2), (1, 2), (2, 2)
+        # Candidatas exteriores para la Casilla Verde fuera del 3x3 (gy = -1)
+        s1_outside_candidates = [
+            (0, -1), (1, -1), (2, -1)
         ]
 
         is_fixed = (os.environ.get("TRACK_B_FIXED") == "1")
@@ -120,24 +119,25 @@ class TrackBSupervisor(Supervisor):
             parts = [int(p.strip()) for p in env_start.split(",")]
             self.start_cell = (parts[0], parts[1])
         elif is_fixed:
-            self.start_cell = (0, 0)
+            self.start_cell = (0, -1)
         else:
-            self.start_cell = random.choice(s1_candidates)
+            self.start_cell = random.choice(s1_outside_candidates)
 
-        log(f"[S1 INICIO] Casilla Verde (INICIO) ubicada en: {self.start_cell} dentro del 3x3 inicial.")
+        log(f"[S1 INICIO] Casilla Verde (INICIO) ubicada FUERA del 3x3 en: {self.start_cell}")
 
-        # 1. Sección 1: Trampa de la Pelota (3x3 celdas: gx=0..2, gy=0..2)
+        # 1. Casilla de Inicio (FUERA del 3x3, color Verde claro reglamentario)
+        self.track_cells[self.start_cell] = {
+            "type": "START",
+            "color": [0.3, 0.85, 0.3],
+            "name": f"tile_start_{self.start_cell[0]}_{self.start_cell[1]}",
+            "label": "INICIO"
+        }
+
+        # 2. Sección 1: Trampa de la Pelota (3x3 celdas blancas completas: gx=0..2, gy=0..2)
         for gx in range(0, 3):
             for gy in range(0, 3):
                 cell = (gx, gy)
-                if cell == self.start_cell:
-                    self.track_cells[cell] = {
-                        "type": "START",
-                        "color": [0.3, 0.85, 0.3],  # Verde claro reglamentario
-                        "name": f"tile_start_{gx}_{gy}",
-                        "label": "INICIO"
-                    }
-                elif cell == (1, 1):
+                if cell == (1, 1):
                     self.track_cells[cell] = {
                         "type": "S1_BALL_CENTER",
                         "color": [0.95, 0.95, 0.95],
@@ -521,13 +521,8 @@ class TrackBSupervisor(Supervisor):
             trans_field = robot_node.getField("translation")
             trans_field.setSFVec3f([sx, sy, 0.03])
             rot_field = robot_node.getField("rotation")
-            # Orientado hacia el centro de la trampa (1, 1)
-            dx = 1.0 - gx
-            dy = 1.0 - gy
-            if abs(dx) > 1e-4 or abs(dy) > 1e-4:
-                yaw = math.atan2(dy, dx)
-            else:
-                yaw = 1.5707963  # Norte (+Y)
+            # Orientado recto hacia el Norte (+Y) para ingresar directamente a la cuadrícula 3x3
+            yaw = 1.5707963  # 90.0° Norte (+Y)
             rot_field.setSFRotation([0, 0, 1, yaw])
             robot_node.resetPhysics()
             log(f"[ROBOT] Sim2RealRobot teletransportado a INICIO {self.start_cell} -> ({sx:.3f}, {sy:.3f}, 0.030) rumbo {math.degrees(yaw):.1f}°.")

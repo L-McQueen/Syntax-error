@@ -75,9 +75,10 @@ class TrackBRobot(Robot):
         self.gyro = self.getDevice("gyro")
         self.gyro.enable(self.time_step)
         
-        # --- Cámaras ---
         # 1. Cámara inferior picada al suelo (PixyMon)
-        self.camera_floor = self.getDevice("camera")
+        self.camera_floor = self.getDevice("camera_down")
+        if not self.camera_floor:
+            self.camera_floor = self.getDevice("camera")
         self.camera_floor.enable(self.time_step)
         self.cam_floor_w = self.camera_floor.getWidth()
         self.cam_floor_h = self.camera_floor.getHeight()
@@ -166,13 +167,13 @@ class TrackBRobot(Robot):
 
         h, w = hsv.shape[:2]
         
-        # --- 1. CLASIFICACIÓN DE COLOR DE BALDOSA (Región central ROI) ---
-        cx, cy = w // 2, h // 2
-        roi_half = 20
-        roi = hsv[max(0, cy - roi_half):min(h, cy + roi_half), max(0, cx - roi_half):min(w, cx + roi_half)]
+        # --- 1. CLASIFICACIÓN DE COLOR DE BALDOSA (Región frontal del suelo) ---
+        # En la imagen hacia abajo, las filas superiores (0..60) corresponden al suelo frente a la pala
+        cx = w // 2
+        roi = hsv[5:55, max(0, cx - 35):min(w, cx + 35)]
         
         # Máscaras HSV
-        mask_green = cv2.inRange(roi, np.array([35, 80, 60]), np.array([85, 255, 255]))
+        mask_green = cv2.inRange(roi, np.array([35, 70, 50]), np.array([85, 255, 255]))
         mask_red1 = cv2.inRange(roi, np.array([0, 100, 80]), np.array([10, 255, 255]))
         mask_red2 = cv2.inRange(roi, np.array([160, 100, 80]), np.array([180, 255, 255]))
         mask_red = cv2.bitwise_or(mask_red1, mask_red2)
@@ -192,15 +193,16 @@ class TrackBRobot(Robot):
         }
         
         best_color, best_count = max(counts.items(), key=lambda x: x[1])
-        min_pixels = 300
+        min_pixels = 150
         if best_count > min_pixels:
             self.current_floor_color = best_color
         else:
             self.current_floor_color = "WHITE_OR_NEUTRAL"
 
         # --- 2. DETECCIÓN DE LÍNEAS BLANCAS (Sección 2) ---
-        # Cinta blanca pura sobre fondo verde: Sat < 50, Val > 200
-        mask_white = cv2.inRange(hsv, np.array([0, 0, 200]), np.array([180, 50, 255]))
+        # Evaluar exclusivamente sobre el suelo visible (filas 0..60)
+        floor_region = hsv[0:60, :]
+        mask_white = cv2.inRange(floor_region, np.array([0, 0, 200]), np.array([180, 50, 255]))
         white_pixels = cv2.countNonZero(mask_white)
         
         if white_pixels > 250:
@@ -239,7 +241,7 @@ class TrackBRobot(Robot):
             step_count += 1
             
             # 1. Percepción visual desde cámara picada al suelo
-            _, hsv_floor = self.get_floor_image()
+            bgr_floor, hsv_floor = self.get_floor_image()
             self.analyze_floor_vision(hsv_floor)
             
             # 2. Telemetría de sensores ToF e IMU

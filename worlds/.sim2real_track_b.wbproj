@@ -8,5 +8,6 @@ orthographicViewHeight: 1
 textFiles: -1
 consoles: Console:All:All
 renderingDevicePerspectives: Sim2RealRobot:camera;1;1;0;0
+renderingDevicePerspectives: Sim2RealRobot:camera_down;1;1;0;0
 renderingDevicePerspectives: Sim2RealRobot:main_camera;1;1;0;0
 renderingDevicePerspectives: Sim2RealRobot:oled_display;1;1;0;0

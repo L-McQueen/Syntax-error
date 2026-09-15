@@ -268,19 +268,41 @@ DEF SIM2REAL_ROBOT Robot {
       resolution 1
     }
     Camera {
-      translation 0.04 0 0.04
-      rotation 0 1 0 0.7854
+      translation 0.055 0 0.035
+      rotation 0 1 0 1.5708
       children [
-        Shape {
-          appearance PBRAppearance {
-            baseColor 0 0 0
-          }
-          geometry Box {
-            size 0.03 0.03 0.03
-          }
+        Transform {
+          translation 0 0 0.005
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.1 0.6 0.2
+                roughness 0.5
+              }
+              geometry Box {
+                size 0.025 0.025 0.008
+              }
+            }
+          ]
+        }
+        Transform {
+          translation 0 0 -0.004
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.02 0.02 0.02
+                roughness 0.1
+                metalness 0.9
+              }
+              geometry Cylinder {
+                height 0.012
+                radius 0.007
+              }
+            }
+          ]
         }
       ]
-      name "camera"
+      name "camera_down"
       fieldOfView 1.2
       width 128
       height 128

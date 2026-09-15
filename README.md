@@ -15,14 +15,14 @@
 
 ## 📌 ¿De qué trata este proyecto?
 
-Este proyecto nace con una filosofía muy clara de ingeniería práctica: **diseñar un robot autónomo capaz de resolver un laberinto modular con presupuesto accesible ("modo estudihambre"), exprimiendo al máximo la física, las matemáticas y el software antes de armarlo físicamente.**
+Este proyecto nace con una filosofía muy clara de ingeniería práctica: **diseñar un robot autónomo capaz de resolver una pista de maze con presupuesto accesible estudihambre, exprimiendo al máximo la física, las matemáticas y el software antes de armarlo físicamente.**
 
-Muchas soluciones en robótica asumen que dispones de encoders magnéticos de alta resolución, microcontroladores industriales o LiDARs de cientos de dólares. Aquí asumimos el reto contrario:
+Muchas soluciones en robótica asumen que dispones de encoders magnéticos de alta resolución, microcontroladores industriales o LiDARs caros, o almenos sensores decentes. asumimos el reto contrario:
 - ¿Qué pasa si **no tenemos encoders de rueda a la mano** o queremos evitar el típico error acumulado por patinaje (*wheel-slip*)?
 - ¿Qué pasa si el giróscopo económico (**MPU-6050**) deriva con la temperatura y las vibraciones?
 - ¿Cómo nos aseguramos de que el carro entre **perfectamente centrado y alineado a los pasillos e intersecciones**, sin raspar las esquinas ni trabarse en callejones sin salida?
 
-Para resolver esto, construimos un entorno **Sim2Real** en **Webots** que modela con honestidad las imperfecciones del hardware real (asimetría de motores, micro-patinaje en llantas, deriva estocástica del sensor inercial y ruido en láseres ToF), diseñando algoritmos de control que garantizan un **100% de éxito en pista y retorno a base**.
+Para resolver esto, construimos un entorno **Sim2Real** que es basicamete un gemelo digital en **Webots** que modela con honestidad las imperfecciones del hardware real (asimetría de motores, micro-patinaje en llantas, deriva estocástica del sensor inercial y ruido en láseres ToF), diseñando algoritmos de control que garantizan un **100% de éxito en pista y retorno a base**.
 
 ---
 
@@ -69,7 +69,7 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
    * **Línea de Potencia (7.8V fijos):** Alimentada por un convertidor reductor **LM2596 Step-Down a 7.8V** que va **exclusivamente al driver DRV8833 y los motores N20**. Esto aísla por completo el ruido electromagnético, los picos inductivos y las caídas momentáneas de tensión (*voltage sags*) provocadas por los motores, evitando reinicios repentinos (*brownouts*) en la electrónica de control.
    * **Línea de Lógica (5V estables):** Una línea independiente de $5\text{ V}$ alimenta la **Orange Pi Zero 2W** y el **Arduino Uno R3**, asegurando que ambos cerebros trabajen con rizado mínimo y alimentación limpia.
 
-2. **Cerebro Superior y Fusión Sensorial: Orange Pi Zero 2W**
+2. **Cerebro Superior y toma de deciciones: Orange Pi Zero 2W**
    * Corre Linux embebido y **concentra todos los sensores y periféricos directamente**:
      - **Bus I2C nativo:** Lee en tiempo real el giróscopo/acelerómetro **GY-521 (MPU-6050)**, los 3 sensores láser ToF (**VL53L1X** frontal y **VL53L0X** laterales) y comanda la **Pantalla LCD**.
      - **Bus SPI:** Comunica a alta velocidad con la cámara **Pixy / PixyMon**, transmitiendo los bloques de color detectados con latencia despreciable.

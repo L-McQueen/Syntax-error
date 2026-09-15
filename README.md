@@ -43,8 +43,8 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
                          │                               │
                          │               ┌───────────────┴───────────────┐
                          │               ▼                               ▼
-                         │        Arduino Uno R3                 Orange Pi Zero 2W
-                         │       (PWM Exclusivo)             (Cerebro Linux / Sensores)
+                         │        Arduino Uno R3 ◄──────UART──────► Orange Pi Zero 2W
+                         │       (PWM Exclusivo)   (/dev/ttyS1)  (Cerebro Linux / Sensores)
                          │               │                               │
                          ▼               │                               │
                    Driver DRV8833 ◄──────┘ (Pines PWM)                   │
@@ -71,6 +71,7 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
 
 2. **Cerebro Superior y toma de deciciones: Orange Pi Zero 2W**
    * Corre Linux embebido y **concentra todos los sensores y periféricos directamente**:
+     - **Canal UART (`/dev/ttyS1` o `/dev/ttyUSB0`):** Comunicación serial punto a punto con el Arduino Uno a 115200 baudios, transmitiendo paquetes livianos de velocidad (`[v_left, v_right]`).
      - **Bus I2C nativo:** Lee en tiempo real el giróscopo/acelerómetro **GY-521 (MPU-6050)**, los 3 sensores láser ToF (**VL53L1X** frontal y **VL53L0X** laterales) y comanda la **Pantalla LCD**.
      - **Bus SPI:** Comunica a alta velocidad con la cámara **Pixy / PixyMon**, transmitiendo los bloques de color detectados con latencia despreciable.
      - **Puerto USB:** Conecta la **Webcam USB** para lectura y decodificación de marcadores ArUco con OpenCV.
@@ -88,7 +89,7 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
    * **Pixy / PixyMon (SPI):** Cámara de visión por hardware dedicada para clasificar el color del suelo en picada. Al conectarse por SPI y procesar la segmentación cromática en su propio procesador interno, entrega las coordenadas y firmas de color al instante, liberando por completo a la CPU de la Orange Pi de procesar flujos de video pesados para el suelo.
 
 5. **Cerebro de Bajo Nivel: Arduino Uno R3 (Exclusivo para Motores)**
-   * Conectado a la Orange Pi por bus I2C / Serial.
+   * **Comunicación UART (Serial) con la Orange Pi:** Conectado mediante pines RX/TX a la UART de la Orange Pi Zero 2W (usando convertidor de nivel lógico 3.3V ↔ 5V para proteger los pines de la SBC). Utiliza un protocolo serial simple y robusto (ej. trama ASCII compacta o binaria a 115200 baudios con checksum), evitando la sobrecarga y colisiones del bus I2C donde ya conviven el IMU, ToFs y la pantalla.
    * **Al Arduino SOLAMENTE se conectan los motores** a través del driver DRV8833.
    * *¿Por qué separar el control de motores en el Arduino?* Los sistemas operativos como Linux no son de tiempo real estricto (*hard real-time*); generar PWM directamente desde los pines de una SBC puede presentar micro-jitter e inconsistencias cuando la CPU se satura procesando visión. El Arduino Uno se encarga al $100\%$ de generar el tren de pulsos PWM determinista, suave y simétrico para cada llanta.
 

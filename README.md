@@ -427,21 +427,66 @@ Para garantizar que el sistema no dependa de la "suerte" en una sola corrida, ej
 WebotsSim2Real/
 ├── controllers/
 │   ├── maze_supervisor/
-│   │   └── maze_supervisor.py      # Generador procedimental de laberintos, rampas y ArUco
-│   └── robot_maze_solver/
-│       └── robot_maze_solver.py    # Controlador principal con FSM, PID 10-15cm, ToF y Visión
+│   │   └── maze_supervisor.py      # Generador procedimental de laberintos, rampas y ArUco (Pista A)
+│   ├── track_b_supervisor/
+│   │   └── track_b_supervisor.py   # Generador dinámico VRML de Pista B (Trampa, Líneas, Colores)
+│   ├── robot_maze_solver/
+│   │   └── robot_maze_solver.py    # Controlador Pista A (FSM, PID, ToF, ArUco, Retorno a Inicio)
+│   └── robot_track_b_solver/
+│       └── robot_track_b_solver.py # Controlador Pista B (Mismo chasis/sensores, navegación de niveles)
 ├── docs/
 │   └── images/                     # Gráficas generadas con telemetría real (Matplotlib)
 ├── evaluations/
 │   └── batch_dead_reckoning_summary.md  # Reportes estadísticos de evaluación
 ├── scripts/
-│   ├── batch_test_runs.py          # Runner automatizado para pruebas batch en Webots
-│   └── generate_plots.py           # Generador de gráficas a partir de god_mode_live.log
+│   ├── batch_test_runs.py          # Runner automatizado para pruebas batch en Pista A
+│   ├── generate_plots.py           # Generador de gráficas a partir de god_mode_live.log
+│   └── verify_track_b.py           # Verificador automatizado 100% de generación física de Pista B
 ├── worlds/
-│   └── sim2real_maze.wbt           # Mundo de Webots con robot diferencial configurado
-├── launch.bat                      # Lanzador rápido de la simulación en modo headless/fast
-├── god_mode_live.log               # Telemetría detallada en tiempo real de la última corrida
+│   ├── sim2real_maze.wbt           # Pista A: Laberinto 5x5 con obstáculos, rampas y ArUco
+│   └── sim2real_track_b.wbt        # Pista B: Circuito de Niveles (Trampa, Líneas Blancas, Laberinto Colores)
+├── launch.bat                      # Lanzador interactivo/headless con selector de mundo
+├── target_world.txt                # Selector de mundo activo (sim2real_maze.wbt o sim2real_track_b.wbt)
+├── god_mode_live.log               # Telemetría en tiempo real Pista A
+├── god_mode_track_b.log            # Telemetría en tiempo real Pista B
 └── README.md                       # Esta documentación
+```
+
+---
+
+## 🏁 Pista B: Niveles (Control Fino, Recolección y Visión)
+
+La **Pista B** evalúa el desempeño en tareas de precisión física, discriminación de líneas y navegación basada en firmas de color. Todo el circuito se genera dinámicamente mediante **Dynamic Spawning VRML** en el plano X-Y (Z-UP) sobre una cuadrícula modular con celdas de $0.30\text{ m} \times 0.30\text{ m}$ y ranuras negras de $4\text{ mm}$ ($0.004\text{ m}$).
+
+### Estructura de las 3 Secciones Contiguas:
+
+1. **Sección 1: La Trampa de la Pelota (Ball Trap - $3\times3$ celdas):**
+   * **Pelota de Golf Reglamentaria:** Ubicada en la celda central $(1, 1)$. Geometría esférica de radio $0.021\text{ m}$ ($42\text{ mm}$ de diámetro), color naranja brillante, masa física de $0.045\text{ kg}$ ($45\text{ g}$) con amortiguamiento (*damping*) para rodadura realista.
+   * **Trampa Central de 3 Muros:** Rodea la pelota con paredes de $0.15\text{ m}$ de altura en 3 lados. El supervisor selecciona **aleatoriamente** en cada ronda cuál de los 4 lados (Norte, Sur, Este u Oeste) queda abierto para que el robot acceda y empuje la pelota con su pala (*scoop*).
+   * **Checkpoint 1:** Casilla roja en $(3, 1)$ que conecta con la Sección 2.
+
+2. **Sección 2: Evasión de Líneas Blancas ($2\times4$ celdas verdes):**
+   * Baldosas base verdes ($0.1, 0.65, 0.15$).
+   * **Líneas Blancas de Obstáculo:** Cintas blancas de $0.02\text{ m}$ de ancho que bloquean el carril, dejando un espacio libre reglamentario de $0.30\text{ m}$ (el ancho exacto de una celda).
+   * **Aleatoriedad:** El supervisor posiciona el hueco libre de forma aleatoria (carril superior o inferior) en cada una de las 3 barreras de transición entre columnas.
+   * **Checkpoint 2:** Casilla roja en $(8, 1)$ que conecta con la Sección 3.
+
+3. **Sección 3: Laberinto de Colores (Generación Procedural):**
+   * **Caminata Aleatoria (Random Walk):** El camino se genera procedimentalmente de manera no auto-intersecante. No existen muros internos en esta sección; el robot se orienta exclusivamente con su cámara picada al suelo (Pixy).
+   * **Código Estricto de Colores por Giro Relativo:**
+     - 🟦 **Cyan** (`0 1 1`): Si el camino gira a la **DERECHA**.
+     - 🟨 **Amarillo** (`1 1 0`): Si el camino gira a la **IZQUIERDA**.
+     - 🟧 **Naranja** (`1 0.5 0`): Si el camino continúa hacia **ADELANTE**.
+     - 🟪 **Magenta** (`1 0 1`): Si el camino va hacia **ATRÁS** ($180^\circ$).
+   * **Meta Final:** Baldosa verde claro etiquetada como `FIN` al término del recorrido.
+
+4. **Física y Muro Perimetral:**
+   * Muro continuo de $0.15\text{ m}$ de altura ($0.01\text{ m}$ de grosor) generado dinámicamente alrededor de todas las celdas activas para evitar que el robot o la pelota salgan de la pista.
+
+### Ejecución y Verificación de la Pista B:
+```bash
+# Verificación automatizada de generación procedural y físicas:
+python scripts/verify_track_b.py
 ```
 
 ---
@@ -455,23 +500,16 @@ WebotsSim2Real/
   pip install numpy opencv-contrib-python matplotlib
   ```
 
-### 2. Ejecutar en Webots (Modo Interactivo):
-1. Abre el mundo en Webots:
-   `worlds/sim2real_maze.wbt`
-2. Presiona el botón **Play (Run)** en la barra superior.
-3. Observa en la consola de Webots y en la pantalla OLED del robot cómo toma decisiones, detecta la meta roja y retorna a $(0, 0)$.
+### 2. Ejecutar Pista A (Laberinto 5x5):
+1. Seleccionar mundo en `target_world.txt`: `worlds/sim2real_maze.wbt`
+2. Abrir Webots o ejecutar `launch.bat`.
 
-### 3. Ejecutar Evaluación Automatizada por Lote:
-Para correr 5 pruebas completas y verificar métricas sin tocar la interfaz gráfica:
-```bash
-python scripts/batch_test_runs.py
-```
-
-### 4. Regenerar las Gráficas de Telemetría:
-Para actualizar las gráficas en `docs/images/` tras una nueva corrida:
-```bash
-python scripts/generate_plots.py
-```
+### 3. Ejecutar Pista B (Niveles):
+1. Seleccionar mundo en `target_world.txt`: `worlds/sim2real_track_b.wbt`
+2. Abrir Webots o ejecutar:
+   ```bash
+   python scripts/verify_track_b.py
+   ```
 
 ---
 

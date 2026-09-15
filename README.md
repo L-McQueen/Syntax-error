@@ -51,12 +51,16 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
                    (Dual H-Bridge)                                       │
                          │                                               │
                          ▼                                               ▼
-                  Motores N20 (100:1)                           Sensores Directos (I2C/USB):
-                   (Tracción 7.8V)                               - IMU GY-521 (MPU-6050)
-                                                                 - ToF Frontal (VL53L1X)
-                                                                 - ToFs Laterales (VL53L0X)
-                                                                 - Webcam USB (ArUco)
-                                                                 - Pixy / PixyMon (Piso)
+                  Motores N20 (100:1)                           Periféricos y Sensores:
+                   (Tracción 7.8V)                               - Bus I2C:
+                                                                   * IMU GY-521 (MPU-6050)
+                                                                   * ToF Frontal (VL53L1X)
+                                                                   * ToFs Laterales (VL53L0X)
+                                                                   * Pantalla LCD (Telemetría)
+                                                                 - Bus SPI:
+                                                                   * Pixy / PixyMon (Color Piso)
+                                                                 - Puerto USB:
+                                                                   * Webcam USB (ArUco OpenCV)
 ```
 
 ### Componentes Seleccionados y Decisiones Técnicas:
@@ -66,30 +70,42 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
    * **Línea de Lógica (5V estables):** Una línea independiente de $5\text{ V}$ alimenta la **Orange Pi Zero 2W** y el **Arduino Uno R3**, asegurando que ambos cerebros trabajen con rizado mínimo y alimentación limpia.
 
 2. **Cerebro Superior y Fusión Sensorial: Orange Pi Zero 2W**
-   * Corre Linux embebido y **concentra todos los sensores directamente**:
-     - **Bus I2C nativo:** Lee en tiempo real el giróscopo/acelerómetro **GY-521 (MPU-6050)** y los 3 sensores de distancia láser ToF (**VL53L1X** frontal y **VL53L0X** laterales).
-     - **Puertos USB / Hardware:** Conecta la **Webcam USB** (para lectura de ArUco con OpenCV) y la cámara **Pixy / PixyMon** (para clasificación instantánea del color de piso).
+   * Corre Linux embebido y **concentra todos los sensores y periféricos directamente**:
+     - **Bus I2C nativo:** Lee en tiempo real el giróscopo/acelerómetro **GY-521 (MPU-6050)**, los 3 sensores láser ToF (**VL53L1X** frontal y **VL53L0X** laterales) y comanda la **Pantalla LCD**.
+     - **Bus SPI:** Comunica a alta velocidad con la cámara **Pixy / PixyMon**, transmitiendo los bloques de color detectados con latencia despreciable.
+     - **Puerto USB:** Conecta la **Webcam USB** para lectura y decodificación de marcadores ArUco con OpenCV.
    * Aquí se ejecuta el algoritmo de mapeo DFS, el estimador físico de orientación con muros ($\theta_{\text{walls}}$) y el control lateral PID.
 
-3. **Cerebro de Bajo Nivel: Arduino Uno R3 (Exclusivo para Motores)**
+3. **Pantalla LCD (I2C): Telemetría Visual en Tiempo Real**
+   * Conectada al bus I2C de la Orange Pi (mediante módulo I2C PCF8574).
+   * **Función en pista:** Muestra en vivo la información crítica de la carrera sin requerir conexión remota por Wi-Fi o monitor externo:
+     - Color de suelo clasificado por la Pixy (`RED`, `ORANGE`, `WHITE`, etc.).
+     - ID del marcador ArUco detectado al final del pasillo.
+     - Estado de la FSM (`MOVE`, `SCAN`, `RETURN_HOME`) y coordenadas estimadas $(X, Y)$.
+
+4. **Visión Híbrida Desacoplada (Webcam USB + PixyMon por SPI):**
+   * **Webcam USB:** Apuntando al frente para reconocer marcadores **ArUco (DICT_4X4_50)** adheridos en las paredes de los pasillos mediante OpenCV.
+   * **Pixy / PixyMon (SPI):** Cámara de visión por hardware dedicada para clasificar el color del suelo en picada. Al conectarse por SPI y procesar la segmentación cromática en su propio procesador interno, entrega las coordenadas y firmas de color al instante, liberando por completo a la CPU de la Orange Pi de procesar flujos de video pesados para el suelo.
+
+5. **Cerebro de Bajo Nivel: Arduino Uno R3 (Exclusivo para Motores)**
    * Conectado a la Orange Pi por bus I2C / Serial.
    * **Al Arduino SOLAMENTE se conectan los motores** a través del driver DRV8833.
    * *¿Por qué separar el control de motores en el Arduino?* Los sistemas operativos como Linux no son de tiempo real estricto (*hard real-time*); generar PWM directamente desde los pines de una SBC puede presentar micro-jitter e inconsistencias cuando la CPU se satura procesando visión. El Arduino Uno se encarga al $100\%$ de generar el tren de pulsos PWM determinista, suave y simétrico para cada llanta.
 
-4. **Driver de Motor: DRV8833**
+6. **Driver de Motor: DRV8833**
    * Elegido sobre el clásico L298N porque el DRV8833 utiliza puentes H de transistores MOSFET con una caída de voltaje interna prácticamente nula ($\approx 0.1\text{ V}$ frente a los $\approx 2.0\text{ V}$ que desperdicia el L298N en forma de calor).
 
-5. **Motores: N20 Micro Metal Gearmotor (Relación 100:1)**
+7. **Motores: N20 Micro Metal Gearmotor (Relación 100:1)**
    * Rango de operación de 6 a 12V. En pruebas nominales a $6.0\text{ V}$ entregan $297.0\text{ RPM}$ en vacío.
    * Su caja reductora metálica entrega el torque necesario para subir rampas y acelerar suavemente en casillas de $30\text{ cm}$.
 
-6. **Sensores de Distancia: ToF Láser (VL53L1X y VL53L0X) en vez de Ultrasónicos HC-SR04**
+8. **Sensores de Distancia: ToF Láser (VL53L1X y VL53L0X) en vez de Ultrasónicos HC-SR04**
    * *¿Por qué NO ultrasónicos?* El sensor ultrasónico HC-SR04 emite un cono acústico ancho ($\approx 15^\circ - 30^\circ$). En un laberinto con pasillos estrechos de apenas $30\text{ cm}$, el eco sonoro rebota contra las paredes laterales (*multipath interference*), arrojando distancias falsas y fantasmas.
    * *Nuestra elección:* Sensores de Tiempo de Vuelo láser (ToF):
      - **Frontal (VL53L1X):** Rango largo de hasta $4.0\text{ m}$ con cono óptico milimétrico.
      - **Laterales (VL53L0X):** Rango de hasta $2.0\text{ m}$, ideales para medir distancias de $5$ a $25\text{ cm}$ contra las paredes laterales.
 
-7. **IMU: GY-521 (MPU-6050)**
+9. **IMU: GY-521 (MPU-6050)**
    * Módulo popular de 6 grados de libertad (acelerómetro + giróscopo de 3 ejes) que proporciona el ángulo de guiñada (Yaw) para orientar el robot. Conectado por I2C directo a la Orange Pi para autocalibración continua con el algoritmo $\theta_{\text{walls}}$.
 
 ---

@@ -75,10 +75,10 @@ class TrackBRobot(Robot):
         self.gyro = self.getDevice("gyro")
         self.gyro.enable(self.time_step)
         
-        # 1. Cámara inferior picada al suelo (PixyMon)
-        self.camera_floor = self.getDevice("camera_down")
+        # 1. Cámara de suelo (PixyMon - Mismo montaje y ángulo que Pista A)
+        self.camera_floor = self.getDevice("camera")
         if not self.camera_floor:
-            self.camera_floor = self.getDevice("camera")
+            self.camera_floor = self.getDevice("camera_down")
         self.camera_floor.enable(self.time_step)
         self.cam_floor_w = self.camera_floor.getWidth()
         self.cam_floor_h = self.camera_floor.getHeight()
@@ -167,10 +167,9 @@ class TrackBRobot(Robot):
 
         h, w = hsv.shape[:2]
         
-        # --- 1. CLASIFICACIÓN DE COLOR DE BALDOSA (Región frontal del suelo) ---
-        # En la imagen hacia abajo, las filas superiores (0..60) corresponden al suelo frente a la pala
+        # --- 1. CLASIFICACIÓN DE COLOR DE BALDOSA (Región inferior correspondiente al suelo) ---
         cx = w // 2
-        roi = hsv[5:55, max(0, cx - 35):min(w, cx + 35)]
+        roi = hsv[75:125, max(0, cx - 35):min(w, cx + 35)]
         
         # Máscaras HSV
         mask_green = cv2.inRange(roi, np.array([35, 70, 50]), np.array([85, 255, 255]))
@@ -200,8 +199,8 @@ class TrackBRobot(Robot):
             self.current_floor_color = "WHITE_OR_NEUTRAL"
 
         # --- 2. DETECCIÓN DE LÍNEAS BLANCAS (Sección 2) ---
-        # Evaluar exclusivamente sobre el suelo visible (filas 0..60)
-        floor_region = hsv[0:60, :]
+        # Evaluar en la franja del suelo visible (filas 75..125)
+        floor_region = hsv[75:125, :]
         mask_white = cv2.inRange(floor_region, np.array([0, 0, 200]), np.array([180, 50, 255]))
         white_pixels = cv2.countNonZero(mask_white)
         

@@ -28,7 +28,7 @@ Para resolver esto, construimos un entorno **Sim2Real** en **Webots** que modela
 
 ## 🛠️ Arquitectura de Hardware Real (El Setup Físico)
 
-El robot está pensado con una **arquitectura distribuida de procesamiento jerárquico**: dividimos las tareas pesadas de visión y toma de decisiones de alto nivel del control en tiempo real de los actuadores.
+El robot está pensado con una **arquitectura distribuida de procesamiento jerárquico** con aislamiento eléctrico de potencia: dividimos las tareas pesadas de visión, fusión sensorial y toma de decisiones en la SBC, mientras un microcontrolador dedicado se encarga exclusivamente del tren motriz.
 
 ```
                      ┌────────────────────────────────────────┐
@@ -37,36 +37,44 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
                                          │
                          ┌───────────────┴───────────────┐
                          ▼                               ▼
-                 Step-Down LM2596                Step-Down 5V
-                  (7.8V Estable)                 (Lógica & SBC)
+               [LÍNEA 1: POTENCIA]              [LÍNEA 2: LÓGICA]
+                Step-Down LM2596                 Step-Down 5V
+                 (7.8V Estable)                 (Alimentación Lógica)
                          │                               │
-       ┌─────────────────┴─────────────────┐             │
-       ▼                                   ▼             ▼
-Driver DRV8833                   Motores N20 (100:1)  Orange Pi Zero 2W
-  (Dual H-Bridge)                  (6-12V, 386 RPM)    (Cerebro Linux / OpenCV)
-       ▲                                                 │  ▲
-       │  PWM / Dirección                                │  │ I2C / Serial
-       │                                                 ▼  │
-┌──────┴───────────┐                            ┌───────────┴──────────┐
-│  Arduino Uno R3  │◄────── I2C Bus ────────────┤  Periféricos Visión: │
-│ (Control Motores │                            │ - Webcam USB (ArUco) │
-│   y Sensores)    │◄─── I2C: MPU-6050 (IMU)    │ - PixyMon (Color)    │
-└──────────────────┘◄─── I2C: VL53L1X / VL53L0X └──────────────────────┘
+                         │               ┌───────────────┴───────────────┐
+                         │               ▼                               ▼
+                         │        Arduino Uno R3                 Orange Pi Zero 2W
+                         │       (PWM Exclusivo)             (Cerebro Linux / Sensores)
+                         │               │                               │
+                         ▼               │                               │
+                   Driver DRV8833 ◄──────┘ (Pines PWM)                   │
+                   (Dual H-Bridge)                                       │
+                         │                                               │
+                         ▼                                               ▼
+                  Motores N20 (100:1)                           Sensores Directos (I2C/USB):
+                   (Tracción 7.8V)                               - IMU GY-521 (MPU-6050)
+                                                                 - ToF Frontal (VL53L1X)
+                                                                 - ToFs Laterales (VL53L0X)
+                                                                 - Webcam USB (ArUco)
+                                                                 - Pixy / PixyMon (Piso)
 ```
 
 ### Componentes Seleccionados y Decisiones Técnicas:
 
-1. **Cerebro Superior (SBC): Orange Pi Zero 2W**
-   * Corre Linux embebido y ejecuta el hilo de visión computacional con OpenCV y la lógica de toma de decisiones del laberinto.
-   * Cuenta con suficiente potencia para procesar imágenes concurrentes sin elevar el costo ni el consumo eléctrico.
+1. **Aislamiento Eléctrico con Doble Línea de Alimentación:**
+   * **Línea de Potencia (7.8V fijos):** Alimentada por un convertidor reductor **LM2596 Step-Down a 7.8V** que va **exclusivamente al driver DRV8833 y los motores N20**. Esto aísla por completo el ruido electromagnético, los picos inductivos y las caídas momentáneas de tensión (*voltage sags*) provocadas por los motores, evitando reinicios repentinos (*brownouts*) en la electrónica de control.
+   * **Línea de Lógica (5V estables):** Una línea independiente de $5\text{ V}$ alimenta la **Orange Pi Zero 2W** y el **Arduino Uno R3**, asegurando que ambos cerebros trabajen con rizado mínimo y alimentación limpia.
 
-2. **Visión Híbrida Desacoplada (Webcam USB + PixyMon):**
-   * **Webcam USB:** Apuntando al frente para reconocer marcadores **ArUco (DICT_4X4_50)** adheridos en las paredes de los pasillos.
-   * **Pixy / PixyMon:** Cámara de visión por hardware dedicada para clasificar el color del suelo en picada. Al procesar el color por hardware, libera a la Orange Pi de procesar streams pesados de video para el suelo y permite detectar la baldosa roja de meta al instante.
+2. **Cerebro Superior y Fusión Sensorial: Orange Pi Zero 2W**
+   * Corre Linux embebido y **concentra todos los sensores directamente**:
+     - **Bus I2C nativo:** Lee en tiempo real el giróscopo/acelerómetro **GY-521 (MPU-6050)** y los 3 sensores de distancia láser ToF (**VL53L1X** frontal y **VL53L0X** laterales).
+     - **Puertos USB / Hardware:** Conecta la **Webcam USB** (para lectura de ArUco con OpenCV) y la cámara **Pixy / PixyMon** (para clasificación instantánea del color de piso).
+   * Aquí se ejecuta el algoritmo de mapeo DFS, el estimador físico de orientación con muros ($\theta_{\text{walls}}$) y el control lateral PID.
 
-3. **Cerebro de Bajo Nivel: Arduino Uno R3 "de toda la vida"**
+3. **Cerebro de Bajo Nivel: Arduino Uno R3 (Exclusivo para Motores)**
    * Conectado a la Orange Pi por bus I2C / Serial.
-   * Genera los pulsos PWM limpios y deterministas para el driver de motores y toma las lecturas de los sensores en tiempo real sin latencias del sistema operativo.
+   * **Al Arduino SOLAMENTE se conectan los motores** a través del driver DRV8833.
+   * *¿Por qué separar el control de motores en el Arduino?* Los sistemas operativos como Linux no son de tiempo real estricto (*hard real-time*); generar PWM directamente desde los pines de una SBC puede presentar micro-jitter e inconsistencias cuando la CPU se satura procesando visión. El Arduino Uno se encarga al $100\%$ de generar el tren de pulsos PWM determinista, suave y simétrico para cada llanta.
 
 4. **Driver de Motor: DRV8833**
    * Elegido sobre el clásico L298N porque el DRV8833 utiliza puentes H de transistores MOSFET con una caída de voltaje interna prácticamente nula ($\approx 0.1\text{ V}$ frente a los $\approx 2.0\text{ V}$ que desperdicia el L298N en forma de calor).
@@ -75,18 +83,14 @@ Driver DRV8833                   Motores N20 (100:1)  Orange Pi Zero 2W
    * Rango de operación de 6 a 12V. En pruebas nominales a $6.0\text{ V}$ entregan $297.0\text{ RPM}$ en vacío.
    * Su caja reductora metálica entrega el torque necesario para subir rampas y acelerar suavemente en casillas de $30\text{ cm}$.
 
-6. **Alimentación y Regulación: LiPo 3S + Regulador Buck LM2596 a 7.8V**
-   * Una batería LiPo 3S entrega entre $11.1\text{ V}$ y $12.6\text{ V}$.
-   * En vez de alimentar los motores directo de la batería (donde la velocidad cambiaría conforme se descarga la pila), usamos un convertidor reductor **LM2596 Step-Down calibrado a 7.8V fijos**. Esto nos da una velocidad angular perfectamente constante durante toda la carrera.
-
-7. **Sensores de Distancia: ToF Láser (VL53L1X y VL53L0X) en vez de Ultrasónicos HC-SR04**
+6. **Sensores de Distancia: ToF Láser (VL53L1X y VL53L0X) en vez de Ultrasónicos HC-SR04**
    * *¿Por qué NO ultrasónicos?* El sensor ultrasónico HC-SR04 emite un cono acústico ancho ($\approx 15^\circ - 30^\circ$). En un laberinto con pasillos estrechos de apenas $30\text{ cm}$, el eco sonoro rebota contra las paredes laterales (*multipath interference*), arrojando distancias falsas y fantasmas.
    * *Nuestra elección:* Sensores de Tiempo de Vuelo láser (ToF):
      - **Frontal (VL53L1X):** Rango largo de hasta $4.0\text{ m}$ con cono óptico milimétrico.
      - **Laterales (VL53L0X):** Rango de hasta $2.0\text{ m}$, ideales para medir distancias de $5$ a $25\text{ cm}$ contra las paredes laterales.
 
-8. **IMU: GY-521 (MPU-6050)**
-   * Módulo popular de 6 grados de libertad (acelerómetro + giróscopo de 3 ejes) que proporciona el ángulo de guiñada (Yaw) para orientar el robot.
+7. **IMU: GY-521 (MPU-6050)**
+   * Módulo popular de 6 grados de libertad (acelerómetro + giróscopo de 3 ejes) que proporciona el ángulo de guiñada (Yaw) para orientar el robot. Conectado por I2C directo a la Orange Pi para autocalibración continua con el algoritmo $\theta_{\text{walls}}$.
 
 ---
 

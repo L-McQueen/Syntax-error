@@ -56,19 +56,191 @@ DEF SIM2REAL_ROBOT Robot {
       }
     }
     Solid {
-      translation 0.045 0 -0.01
+      translation 0 0 0
       children [
-        Shape {
-          appearance PBRAppearance {
-            baseColor 0.1 0.3 0.8
-            roughness 0.8
-          }
-          geometry Box {
-            size 0.02 0.06 0.005
-          }
+        # Brazo izquierdo de la garra (guía recta)
+        Transform {
+          translation 0.065 0.026 -0.013
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.1 0.4 0.9
+                roughness 0.4
+              }
+              geometry Box {
+                size 0.05 0.005 0.03
+              }
+            }
+          ]
+        }
+        # Embudo izquierdo acampanado (apertura de entrada)
+        Transform {
+          translation 0.095 0.032 -0.013
+          rotation 0 0 1 0.5236
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.1 0.4 0.9
+                roughness 0.4
+              }
+              geometry Box {
+                size 0.02 0.005 0.03
+              }
+            }
+          ]
+        }
+        # Brazo derecho de la garra (guía recta)
+        Transform {
+          translation 0.065 -0.026 -0.013
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.1 0.4 0.9
+                roughness 0.4
+              }
+              geometry Box {
+                size 0.05 0.005 0.03
+              }
+            }
+          ]
+        }
+        # Embudo derecho acampanado (apertura de entrada)
+        Transform {
+          translation 0.095 -0.032 -0.013
+          rotation 0 0 1 -0.5236
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.1 0.4 0.9
+                roughness 0.4
+              }
+              geometry Box {
+                size 0.02 0.005 0.03
+              }
+            }
+          ]
+        }
+        # Piso del bolsillo de la garra (placa deslizante de baja fricción)
+        Transform {
+          translation 0.055 0 -0.027
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.05 0.2 0.6
+                roughness 0.2
+              }
+              geometry Box {
+                size 0.040 0.046 0.002
+              }
+            }
+          ]
+        }
+        # Rampa inclinada de entrada (la pelota sube suavemente hacia el bolsillo)
+        Transform {
+          translation 0.085 0 -0.022
+          rotation 0 1 0 -0.35
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.1 0.4 0.9
+                roughness 0.2
+              }
+              geometry Box {
+                size 0.022 0.046 0.004
+              }
+            }
+          ]
+        }
+        # Diente de retención izquierdo (bloqueo pasivo tipo trinquete)
+        Transform {
+          translation 0.082 0.017 -0.014
+          rotation 0 0 1 -0.5236
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.1 0.4 0.9
+                roughness 0.3
+              }
+              geometry Box {
+                size 0.014 0.003 0.020
+              }
+            }
+          ]
+        }
+        # Diente de retención derecho (bloqueo pasivo tipo trinquete)
+        Transform {
+          translation 0.082 -0.017 -0.014
+          rotation 0 0 1 0.5236
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.1 0.4 0.9
+                roughness 0.3
+              }
+              geometry Box {
+                size 0.014 0.003 0.020
+              }
+            }
+          ]
         }
       ]
-      name "scoop"
+      name "passive_claw"
+      contactMaterial "SkiMaterial"
+      boundingObject Group {
+        children [
+          Transform {
+            translation 0.065 0.026 -0.013
+            children [
+              Box {
+                size 0.05 0.005 0.03
+              }
+            ]
+          }
+          Transform {
+            translation 0.095 0.032 -0.013
+            rotation 0 0 1 0.5236
+            children [
+              Box {
+                size 0.02 0.005 0.03
+              }
+            ]
+          }
+          Transform {
+            translation 0.065 -0.026 -0.013
+            children [
+              Box {
+                size 0.05 0.005 0.03
+              }
+            ]
+          }
+          Transform {
+            translation 0.095 -0.032 -0.013
+            rotation 0 0 1 -0.5236
+            children [
+              Box {
+                size 0.02 0.005 0.03
+              }
+            ]
+          }
+          Transform {
+            translation 0.055 0 -0.027
+            children [
+              Box {
+                size 0.040 0.046 0.002
+              }
+            ]
+          }
+          Transform {
+            translation 0.085 0 -0.022
+            rotation 0 1 0 -0.35
+            children [
+              Box {
+                size 0.022 0.046 0.004
+              }
+            ]
+          }
+        ]
+      }
     }
     HingeJoint {
       jointParameters HingeJointParameters {

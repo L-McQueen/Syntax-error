@@ -19,6 +19,7 @@ import os
 import sys
 import random
 import time
+import json
 
 CELL_SIZE = 0.30             # Cada celda mide 30 cm de lado
 HALF_CELL = CELL_SIZE / 2.0  # 15 cm
@@ -35,6 +36,7 @@ PROJECT_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
 LOG_FILE = os.path.join(PROJECT_DIR, "god_mode_track_b.log")
 FLAG_FILE = os.path.join(PROJECT_DIR, "track_b_verified.flag")
 TEST_FLAG_FILE = os.path.join(PROJECT_DIR, "test_track_b.flag")
+CONFIG_FILE = os.path.join(PROJECT_DIR, "track_b_config.json")
 
 def log(msg):
     """Registra en consola y persiste en god_mode_track_b.log con autoflush."""
@@ -71,12 +73,27 @@ class TrackBSupervisor(Supervisor):
         log("  SUPERVISOR PISTA B (NIVELES) - INICIALIZANDO    ")
         log("==================================================")
 
+        # Cargar configuración desde track_b_config.json si existe
+        self.config = {}
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                    self.config = json.load(f)
+                log(f"[CONFIG] track_b_config.json cargado: {self.config}")
+            except Exception as e:
+                log(f"[WARN] Error leyendo {CONFIG_FILE}: {e}")
+
         # Configurar generador de números aleatorios (semilla opcional para reproducibilidad)
+        seed_cfg = self.config.get("seed")
         seed_env = os.environ.get("TRACK_B_SEED")
-        if seed_env is not None:
+        if seed_cfg is not None:
+            self.seed = int(seed_cfg)
+            random.seed(self.seed)
+            log(f"[CONFIG] Semilla determinista configurada desde JSON: {self.seed}")
+        elif seed_env is not None:
             self.seed = int(seed_env)
             random.seed(self.seed)
-            log(f"[CONFIG] Semilla determinista configurada: {self.seed}")
+            log(f"[CONFIG] Semilla determinista configurada desde ENV: {self.seed}")
         else:
             self.seed = int(time.time() * 1000) % 1000000
             random.seed(self.seed)
@@ -113,9 +130,16 @@ class TrackBSupervisor(Supervisor):
             (0, -1), (1, -1), (2, -1)
         ]
 
-        is_fixed = (os.environ.get("TRACK_B_FIXED") == "1")
+        cfg_start = self.config.get("start_cell")
+        is_fixed = (os.environ.get("TRACK_B_FIXED") == "1") or self.config.get("fixed", False)
         env_start = os.environ.get("TRACK_B_START_CELL")
-        if env_start:
+        if cfg_start:
+            if isinstance(cfg_start, (list, tuple)):
+                self.start_cell = tuple(cfg_start)
+            else:
+                parts = [int(p.strip()) for p in str(cfg_start).split(",")]
+                self.start_cell = (parts[0], parts[1])
+        elif env_start:
             parts = [int(p.strip()) for p in env_start.split(",")]
             self.start_cell = (parts[0], parts[1])
         elif is_fixed:
@@ -388,9 +412,18 @@ class TrackBSupervisor(Supervisor):
         cx, cy = grid_to_world(1, 1)
 
         sides = ["North", "South", "East", "West"]
-        is_fixed = (os.environ.get("TRACK_B_FIXED") == "1")
-        open_side = "South" if is_fixed else random.choice(sides)
-        log(f"[S1 BALL TRAP] Lado abierto aleatorio: {open_side} (los otros 3 lados bloqueados con muros 0.15m)")
+        cfg_side = self.config.get("open_side")
+        env_side = os.environ.get("TRACK_B_OPEN_SIDE")
+        is_fixed = (os.environ.get("TRACK_B_FIXED") == "1") or self.config.get("fixed", False)
+        if cfg_side in sides:
+            open_side = cfg_side
+        elif env_side in sides:
+            open_side = env_side
+        elif is_fixed:
+            open_side = "South"
+        else:
+            open_side = random.choice(sides)
+        log(f"[S1 BALL TRAP] Lado abierto: {open_side} (los otros 3 lados bloqueados con muros 0.15m)")
 
         if open_side != "West":
             self.spawn_wall_segment(cx - HALF_CELL, cy, is_horizontal=False, name_prefix="trap_wall_W")
@@ -533,22 +566,53 @@ class TrackBSupervisor(Supervisor):
         """Ciclo de supervisión, física y telemetría."""
         step_count = 0
         self.ball_node = self.getFromDef("GOLF_BALL")
+        s1_success = False
+        s1_success_step = 0
 
         # Modo test automático
-        is_test_mode = (os.environ.get("TRACK_B_TEST") == "1") or os.path.exists(TEST_FLAG_FILE)
+        is_test_mode = (os.environ.get("TRACK_B_TEST") == "1") or os.path.exists(TEST_FLAG_FILE) or self.config.get("test_mode", False)
+        is_s1_test = (os.environ.get("TRACK_B_S1_TEST") == "1") or self.config.get("s1_test", False)
         if is_test_mode:
             log("[MODE] Modo verificación activado: ejecutará 120 steps para validar físicas y spawn.")
+        if is_s1_test:
+            log("[MODE] Modo prueba Sección 1 activado: saldrá tras confirmar éxito en Checkpoint 1.")
 
         while self.step(self.time_step) != -1:
             step_count += 1
 
-            if step_count % 30 == 0:  # Cada ~0.5s de tiempo simulado
-                if self.ball_node and self.robot_node:
-                    bp = self.ball_node.getPosition()
-                    rp = self.robot_node.getPosition()
-                    dist = math.hypot(bp[0] - rp[0], bp[1] - rp[1])
+            if self.ball_node and self.robot_node:
+                bp = self.ball_node.getPosition()
+                rp = self.robot_node.getPosition()
+                ball_dist = math.hypot(bp[0] - rp[0], bp[1] - rp[1])
+
+                if step_count % 30 == 0:  # Cada ~0.5s de tiempo simulado
                     log(f"[TELEMETRÍA #{step_count:04d}] Robot: ({rp[0]:.2f}, {rp[1]:.2f}) | "
-                        f"Pelota: ({bp[0]:.2f}, {bp[1]:.2f}, Z={bp[2]:.3f}) | Dist: {dist:.2f}m")
+                        f"Pelota: ({bp[0]:.2f}, {bp[1]:.2f}, Z={bp[2]:.3f}) | Dist: {ball_dist:.2f}m")
+
+                # Detección de éxito en Sección 1:
+                cp1_x, cp1_y = grid_to_world(3, 1)
+                dx_cp1 = abs(rp[0] - cp1_x)
+                dy_cp1 = abs(rp[1] - cp1_y)
+                if dx_cp1 < 0.15 and dy_cp1 < 0.15 and ball_dist < 0.10:
+                    if not s1_success:
+                        s1_success = True
+                        s1_success_step = step_count
+                        log("==================================================")
+                        log("  [S1 SUCCESS] ¡MISIÓN SECCIÓN 1 CUMPLIDA!        ")
+                        log("  Robot en Checkpoint 1 (3, 1) con la Pelota!     ")
+                        log(f"  Distancia Robot-Pelota: {ball_dist*100:.1f} cm   ")
+                        log("==================================================")
+                        try:
+                            flag_s1 = os.path.join(PROJECT_DIR, "track_b_s1_passed.flag")
+                            with open(flag_s1, "w", encoding="utf-8") as f:
+                                f.write("PASSED\n")
+                        except Exception as e:
+                            log(f"Error escribiendo flag s1: {e}")
+
+            if is_s1_test and s1_success and (step_count - s1_success_step >= 60):
+                log("[MODE] Prueba Sección 1 completada exitosamente. Saliendo de Webots.")
+                self.simulationQuit(0)
+                break
 
             if is_test_mode and step_count >= 120:
                 log("==================================================")

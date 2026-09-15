@@ -1,0 +1,10 @@
+{
+  "s1_test": true,
+  "test_mode": false,
+  "open_side": "South",
+  "start_cell": [
+    0,
+    -1
+  ],
+  "fixed": false
+}

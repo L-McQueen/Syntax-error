@@ -103,6 +103,12 @@ class TrackBSupervisor(Supervisor):
         self.ball_node = None
         self.robot_node = None
         self.start_cell = None
+        self.finish_cell = None
+        self.white_lines = []
+        self.touched_lines = set()
+        self.cp2_reached = False
+        self.finish_reached = False
+        self.finish_step = 0
 
         self.define_track_layout()
         self.build_track()
@@ -216,24 +222,24 @@ class TrackBSupervisor(Supervisor):
         Genera el laberinto de colores en Sección 3.
         Soporta generación procedural mediante Random Walk con cálculo exacto de giros relativos.
         """
-        is_fixed = (os.environ.get("TRACK_B_FIXED") == "1")
+        is_fixed = (os.environ.get("TRACK_B_FIXED") == "1") or self.config.get("fixed", True)
 
         if is_fixed:
-            # Layout determinista preconfigurado
+            # Layout determinista preconfigurado con REFERENCIA ABSOLUTA (Este 0°):
             # Camino: (9, 1) -> (10, 1) -> (10, 2) -> (11, 2) -> FIN (11, 3)
-            # Giros:
-            # (9, 1): entrando rumbo Este (1, 0), siguiente (10, 1) -> Adelante = Naranja
-            # (10, 1): rumbo Este (1, 0), siguiente (10, 2) rumbo Norte (0, 1) -> Giro Izquierda = Amarillo
-            # (10, 2): rumbo Norte (0, 1), siguiente (11, 2) rumbo Este (1, 0) -> Giro Derecha = Cyan
-            # (11, 2): rumbo Este (1, 0), siguiente FIN (11, 3) rumbo Norte (0, 1) -> Giro Izquierda = Amarillo
+            # Rumbos absolutos hacia siguiente celda:
+            # (9, 1)  rumbo Este (1, 0)  -> Naranja
+            # (10, 1) rumbo Norte (0, 1) -> Amarillo
+            # (10, 2) rumbo Este (1, 0)  -> Naranja
+            # (11, 2) rumbo Norte (0, 1) -> Amarillo
             color_map_s3 = {
-                (9, 1): [1.0, 0.5, 0.0],   # Naranja (Adelante)
-                (10, 1): [1.0, 1.0, 0.0],  # Amarillo (Izquierda)
-                (10, 2): [0.0, 1.0, 1.0],  # Cyan (Derecha)
-                (11, 2): [1.0, 1.0, 0.0]   # Amarillo (Izquierda)
+                (9, 1): [1.0, 0.5, 0.0],   # Naranja (Este 0°)
+                (10, 1): [1.0, 1.0, 0.0],  # Amarillo (Norte 90°)
+                (10, 2): [1.0, 0.5, 0.0],  # Naranja (Este 0°)
+                (11, 2): [1.0, 1.0, 0.0]   # Amarillo (Norte 90°)
             }
             finish_cell = (11, 3)
-            log("[S3] Usando layout fijo verificado.")
+            log("[S3] Usando layout fijo verificado con referencia absoluta.")
         else:
             # Random Walk en región gx in [9, 11], gy in [0, 2]
             # Entrada obligatoria desde CP2 (8, 1) -> (9, 1) rumbo Este (1, 0)
@@ -246,7 +252,6 @@ class TrackBSupervisor(Supervisor):
             for attempt in range(100):
                 path = [start_s3]
                 curr = start_s3
-                curr_dir = (1, 0) # Entrando desde el Oeste rumbo Este
 
                 steps_target = random.randint(4, 6)
                 while len(path) < steps_target:
@@ -274,38 +279,36 @@ class TrackBSupervisor(Supervisor):
 
             log(f"[S3 RANDOM WALK] Camino generado ({len(best_path)} celdas): {best_path}")
 
-            # Calcular colores según giros relativos
-            color_map_s3 = {}
-            in_dir = (1, 0) # Dirección de llegada inicial desde CP2
+            # Celda de meta FIN inmediatamente después de la última celda del camino
+            last_cell = best_path[-1]
+            finish_cell = (last_cell[0], last_cell[1] + 1)
 
+            # Calcular colores según REFERENCIA ABSOLUTA (Reglamento Sim2Real 2026):
+            # Este (1, 0)   = Naranja  [1.0, 0.5, 0.0] (0.0°)
+            # Norte (0, 1)  = Amarillo [1.0, 1.0, 0.0] (+90.0°)
+            # Sur (0, -1)   = Cyan     [0.0, 1.0, 1.0] (-90.0°)
+            # Oeste (-1, 0) = Magenta  [1.0, 0.0, 1.0] (180.0°)
+            color_map_s3 = {}
             for i in range(len(best_path)):
                 cell = best_path[i]
                 if i < len(best_path) - 1:
                     next_cell = best_path[i + 1]
                     out_dir = (next_cell[0] - cell[0], next_cell[1] - cell[1])
                 else:
-                    # Para la última celda, avanzar en la misma dirección o hacia el Norte a la meta
-                    out_dir = in_dir
+                    out_dir = (finish_cell[0] - cell[0], finish_cell[1] - cell[1])
 
-                # Giros relativos 2D (in_dir vs out_dir)
-                dot = in_dir[0] * out_dir[0] + in_dir[1] * out_dir[1]
-                cross = in_dir[0] * out_dir[1] - in_dir[1] * out_dir[0]
-
-                if dot == 1:       # ADELANTE
-                    color = [1.0, 0.5, 0.0] # Naranja
-                elif cross > 0:    # GIRO IZQUIERDA
-                    color = [1.0, 1.0, 0.0] # Amarillo
-                elif cross < 0:    # GIRO DERECHA
-                    color = [0.0, 1.0, 1.0] # Cyan
-                else:              # ATRÁS (180°)
-                    color = [1.0, 0.0, 1.0] # Magenta
+                if out_dir == (1, 0):
+                    color = [1.0, 0.5, 0.0] # Naranja (Este 0°)
+                elif out_dir == (0, 1):
+                    color = [1.0, 1.0, 0.0] # Amarillo (Norte 90°)
+                elif out_dir == (0, -1):
+                    color = [0.0, 1.0, 1.0] # Cyan (Sur -90°)
+                elif out_dir == (-1, 0):
+                    color = [1.0, 0.0, 1.0] # Magenta (Oeste 180°)
+                else:
+                    color = [1.0, 0.5, 0.0]
 
                 color_map_s3[cell] = color
-                in_dir = out_dir
-
-            # Celda de meta FIN inmediatamente después de la última celda del camino
-            last_cell = best_path[-1]
-            finish_cell = (last_cell[0] + in_dir[0], last_cell[1] + in_dir[1])
 
         # Registrar todas las celdas de la cuadrícula S3 (gx=9..11, gy=0..2)
         for gx in range(9, 12):
@@ -320,6 +323,7 @@ class TrackBSupervisor(Supervisor):
                 }
 
         # Casilla de Meta (FIN)
+        self.finish_cell = finish_cell
         self.track_cells[finish_cell] = {
             "type": "FINISH",
             "color": [0.3, 0.85, 0.3],
@@ -394,7 +398,7 @@ class TrackBSupervisor(Supervisor):
             f'DEF {name} Solid {{ '
             f'translation {x:.4f} {y:.4f} {z:.4f} '
             f'children [ Shape {{ '
-            f'  appearance PBRAppearance {{ baseColor 0.95 0.95 0.95 roughness 0.9 metalness 0 }} '
+            f'  appearance PBRAppearance {{ baseColor 0.70 0.70 0.70 roughness 0.9 metalness 0 }} '
             f'  geometry Box {{ size {size_str} }} '
             f'}} ] '
             f'name "{name}" '
@@ -466,40 +470,78 @@ class TrackBSupervisor(Supervisor):
 
     def spawn_white_lines(self):
         """
-        Genera las líneas blancas en Sección 2.
-        Reglamento: Bloquean el paso dejando un hueco ("espacio libre") de 0.30m (1 celda)
-        colocado ALEATORIAMENTE en cada frontera entre columnas.
+        Genera las líneas blancas en Sección 2 con longitud variable y hueco continuo garantizado de 0.30m.
+        Corredor Y: y_min = -0.15m, y_max = +0.45m. Ancho total = 0.60m.
+        El hueco de 0.30m se posiciona con centro y_gap variable en cada frontera.
         """
-        is_fixed = (os.environ.get("TRACK_B_FIXED") == "1")
+        is_fixed = (os.environ.get("TRACK_B_FIXED") == "1") or self.config.get("fixed", False)
+        cfg_gaps = self.config.get("s2_gaps") # opcional: lista de y_gap para [Col 4-5, Col 5-6, Col 6-7]
+        default_fixed_gaps = [0.15, 0.00, 0.30]
 
-        # 3 fronteras entre columnas: gx=4->5, gx=5->6, gx=6->7
-        barriers = []
+        self.white_lines = []
         for i, gx in enumerate([4, 5, 6]):
-            if is_fixed:
-                blocked_gy = 1 if (i % 2 == 0) else 2
+            if cfg_gaps and i < len(cfg_gaps):
+                y_gap = float(cfg_gaps[i])
+            elif is_fixed:
+                y_gap = default_fixed_gaps[i]
             else:
-                blocked_gy = random.choice([1, 2])
-            open_gy = 2 if (blocked_gy == 1) else 1
-            barriers.append((gx, blocked_gy, open_gy))
-            log(f"[S2 WHITE LINE {i+1}] Entre Col {gx} y {gx+1}: Bloqueada Fila {blocked_gy} | Hueco libre Fila {open_gy}")
+                y_gap = random.choice([0.00, 0.30, 0.15])
 
-        for i, (gx, blocked_gy, _) in enumerate(barriers):
-            cx, cy = grid_to_world(gx, blocked_gy)
+            gap_min = y_gap - 0.15
+            gap_max = y_gap + 0.15
+
+            cx, _ = grid_to_world(gx, 1)
             line_x = cx + HALF_CELL
-            line_y = cy
-            name = f"white_line_{i+1}"
-            # Cinta blanca: ancho 0.02m (X), largo 0.30m (Y), espesor 0.001m sobre piso
-            vrml = (
-                f'DEF {name} Solid {{ '
-                f'translation {line_x:.4f} {line_y:.4f} 0.0025 '
-                f'children [ Shape {{ '
-                f'  appearance PBRAppearance {{ baseColor 1.0 1.0 1.0 roughness 0.2 metalness 0 }} '
-                f'  geometry Box {{ size 0.02 0.30 0.002 }} '
-                f'}} ] '
-                f'name "{name}" '
-                f'}}'
-            )
-            self.spawn_node(vrml)
+
+            len_bot = gap_min - (-0.15)
+            if len_bot > 0.01:
+                mid_bot = -0.15 + (len_bot / 2.0)
+                name_bot = f"white_line_{i+1}_bot"
+                vrml = (
+                    f'DEF {name_bot} Solid {{ '
+                    f'translation {line_x:.4f} {mid_bot:.4f} 0.0025 '
+                    f'children [ Shape {{ '
+                    f'  appearance PBRAppearance {{ baseColor 1.0 1.0 1.0 roughness 0.2 metalness 0 }} '
+                    f'  geometry Box {{ size 0.02 {len_bot:.4f} 0.002 }} '
+                    f'}} ] '
+                    f'name "{name_bot}" '
+                    f'}}'
+                )
+                self.spawn_node(vrml)
+                self.white_lines.append({
+                    "name": name_bot,
+                    "x": line_x,
+                    "min_y": -0.15,
+                    "max_y": gap_min,
+                    "len": len_bot
+                })
+
+            len_top = 0.45 - gap_max
+            if len_top > 0.01:
+                mid_top = gap_max + (len_top / 2.0)
+                name_top = f"white_line_{i+1}_top"
+                vrml = (
+                    f'DEF {name_top} Solid {{ '
+                    f'translation {line_x:.4f} {mid_top:.4f} 0.0025 '
+                    f'children [ Shape {{ '
+                    f'  appearance PBRAppearance {{ baseColor 1.0 1.0 1.0 roughness 0.2 metalness 0 }} '
+                    f'  geometry Box {{ size 0.02 {len_top:.4f} 0.002 }} '
+                    f'}} ] '
+                    f'name "{name_top}" '
+                    f'}}'
+                )
+                self.spawn_node(vrml)
+                self.white_lines.append({
+                    "name": name_top,
+                    "x": line_x,
+                    "min_y": gap_max,
+                    "max_y": 0.45,
+                    "len": len_top
+                })
+
+            log(f"[S2 WHITE LINE {i+1}] Frontera Col {gx}->{gx+1} (X={line_x:.3f}m): "
+                f"Hueco libre 30cm en Y=[{gap_min:+.2f}m a {gap_max:+.2f}m] (Centro Y={y_gap:+.2f}m) | "
+                f"L_bot={len_bot:.2f}m, L_top={len_top:.2f}m")
 
     def spawn_perimeter_walls(self):
         """
@@ -609,8 +651,63 @@ class TrackBSupervisor(Supervisor):
                         except Exception as e:
                             log(f"Error escribiendo flag s1: {e}")
 
+                # Monitoreo de contacto con líneas blancas en Sección 2:
+                for wline in self.white_lines:
+                    lx = wline["x"]
+                    if abs(rp[0] - lx) <= 0.045:
+                        if (wline["min_y"] - 0.040) <= rp[1] <= (wline["max_y"] + 0.040):
+                            if wline["name"] not in self.touched_lines:
+                                self.touched_lines.add(wline["name"])
+                                log("==================================================")
+                                log(f"  [S2 TOUCH] ¡ALERTA: Robot pisó la línea blanca {wline['name']}!")
+                                log(f"  Posición Robot: ({rp[0]:.2f}, {rp[1]:.2f}) | Línea X={lx:.2f}, Y=[{wline['min_y']:.2f}, {wline['max_y']:.2f}]")
+                                log("==================================================")
+
+                # Detección de Checkpoint 2 (8, 1):
+                cp2_x, cp2_y = grid_to_world(8, 1)
+                dx_cp2 = abs(rp[0] - cp2_x)
+                dy_cp2 = abs(rp[1] - cp2_y)
+                if dx_cp2 < 0.15 and dy_cp2 < 0.15:
+                    if not self.cp2_reached:
+                        self.cp2_reached = True
+                        log("==================================================")
+                        log(f"  [CP2 SUCCESS] Robot alcanzó Checkpoint 2 (8, 1) en ({rp[0]:.2f}, {rp[1]:.2f})")
+                        if len(self.touched_lines) == 0:
+                            log("  [S2 RESULT] [S2 CLEAN] ¡Paso limpio! Sección 2 superada sin tocar líneas blancas.")
+                        else:
+                            log(f"  [S2 RESULT] [S2 TOUCHED] Sección 2 completada tocando {len(self.touched_lines)} líneas blancas.")
+                        log("==================================================")
+
+                # Detección de Meta Final FIN en Sección 3:
+                if self.finish_cell:
+                    fin_x, fin_y = grid_to_world(self.finish_cell[0], self.finish_cell[1])
+                    dx_fin = abs(rp[0] - fin_x)
+                    dy_fin = abs(rp[1] - fin_y)
+                    if dx_fin < 0.15 and dy_fin < 0.15:
+                        if not self.finish_reached:
+                            self.finish_reached = True
+                            self.finish_step = step_count
+                            log("==================================================")
+                            log(f"  [TRACK B SUCCESS] ¡META ALCANZADA EN {self.finish_cell} ({rp[0]:.2f}, {rp[1]:.2f})!")
+                            log("  ¡PISTA B (NIVELES) COMPLETADA EXITOSAMENTE!    ")
+                            if len(self.touched_lines) == 0:
+                                log("  [S2 CERTIFIED] Paso 100% limpio por líneas blancas.")
+                            else:
+                                log(f"  [S2 WARNING] Total líneas tocadas: {len(self.touched_lines)}")
+                            log("==================================================")
+                            try:
+                                with open(FLAG_FILE, "w", encoding="utf-8") as f:
+                                    f.write("OK\n")
+                            except Exception as e:
+                                log(f"Error escribiendo flag: {e}")
+
             if is_s1_test and s1_success and (step_count - s1_success_step >= 60):
                 log("[MODE] Prueba Sección 1 completada exitosamente. Saliendo de Webots.")
+                self.simulationQuit(0)
+                break
+
+            if self.finish_reached and (step_count - self.finish_step >= 60):
+                log("[MODE] Misión Pista B completada exitosamente. Saliendo de Webots.")
                 self.simulationQuit(0)
                 break
 

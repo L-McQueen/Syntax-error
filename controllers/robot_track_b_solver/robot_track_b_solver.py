@@ -128,28 +128,52 @@ class VisionProcessor(threading.Thread):
                 hsv_floor = cv2.cvtColor(hsv_floor, cv2.COLOR_BGR2HSV)
                 h, w = hsv_floor.shape[:2]
 
-                # Región de interés del piso frente a la garra: filas 15..65, columnas 25..105
-                roi_floor = hsv_floor[15:65, 25:105]
+                # Región de interés del piso para color de la baldosa ACTUAL: filas 75..102, columnas 35..93
+                # Enfocada directamente sobre la baldosa en la que está posicionado el robot
+                roi_floor = hsv_floor[75:102, 35:93]
 
-                # Máscara Verde (Casilla de Inicio fuera del 3x3)
-                mask_green = cv2.inRange(roi_floor, np.array([35, 60, 50]), np.array([85, 255, 255]))
-                green_pixels = cv2.countNonZero(mask_green)
+                # 1.1 Segmentación cromática completa para baldosas de Pista B (S1, S2, S3)
+                # Máscara Verde (Inicio y Meta FIN)
+                mask_green = cv2.inRange(roi_floor, np.array([40, 50, 50]), np.array([78, 255, 255]))
 
-                # Máscara Roja (Checkpoint 1 en 3, 1)
-                mask_red1 = cv2.inRange(roi_floor, np.array([0, 70, 70]), np.array([10, 255, 255]))
-                mask_red2 = cv2.inRange(roi_floor, np.array([160, 70, 70]), np.array([180, 255, 255]))
+                # Máscara Roja (Checkpoint 1 y Checkpoint 2)
+                mask_red1 = cv2.inRange(roi_floor, np.array([0, 60, 60]), np.array([8, 255, 255]))
+                mask_red2 = cv2.inRange(roi_floor, np.array([170, 60, 60]), np.array([180, 255, 255]))
                 mask_red = cv2.bitwise_or(mask_red1, mask_red2)
-                red_pixels = cv2.countNonZero(mask_red)
 
-                if green_pixels > 120 and green_pixels > red_pixels:
-                    floor_col = "GREEN"
-                elif red_pixels > 120 and red_pixels > green_pixels:
-                    floor_col = "RED"
+                # Máscaras de colores reglamentarios de Sección 3 (Referencia Absoluta):
+                # Naranja: [1.0, 0.5, 0] (Adelante / Este 0°)
+                mask_orange = cv2.inRange(roi_floor, np.array([6, 60, 60]), np.array([22, 255, 255]))
+                # Amarillo: [1.0, 1.0, 0] (Izquierda / Norte 90°)
+                mask_yellow = cv2.inRange(roi_floor, np.array([23, 60, 60]), np.array([38, 255, 255]))
+                # Cyan: [0.0, 1.0, 1.0] (Derecha / Sur -90°)
+                mask_cyan = cv2.inRange(roi_floor, np.array([82, 60, 60]), np.array([105, 255, 255]))
+                # Magenta: [1.0, 0.0, 1.0] (Atrás / Oeste 180°)
+                mask_magenta = cv2.inRange(roi_floor, np.array([140, 60, 60]), np.array([168, 255, 255]))
+
+                counts = {
+                    "GREEN": cv2.countNonZero(mask_green),
+                    "RED": cv2.countNonZero(mask_red),
+                    "ORANGE": cv2.countNonZero(mask_orange),
+                    "YELLOW": cv2.countNonZero(mask_yellow),
+                    "CYAN": cv2.countNonZero(mask_cyan),
+                    "MAGENTA": cv2.countNonZero(mask_magenta),
+                }
+                best_color = max(counts, key=counts.get)
+                if counts[best_color] > 55:
+                    floor_col = best_color
                 else:
                     floor_col = "WHITE_OR_NEUTRAL"
 
+                # 1.2 Detección de Línea Blanca adelante en Sección 2:
+                # Región central del carril (cols 42..86) a 15-20cm adelante (filas 45..78)
+                # Excluye completamente los muros laterales (cols < 30 y cols > 98)
+                roi_ahead = hsv_floor[45:78, 42:86]
+                mask_white = cv2.inRange(roi_ahead, np.array([0, 0, 190]), np.array([180, 40, 255]))
+                white_pixels = cv2.countNonZero(mask_white)
+                white_line_detected = (white_pixels > 40)
+
                 # 2. Detección de la Pelota de Golf Naranja (42mm, baseColor 1.0 0.45 0.0)
-                # Buscar en franja amplia de la cámara inferior
                 search_region = hsv_floor[10:110, :]
                 mask_ball = cv2.inRange(search_region, np.array([5, 60, 60]), np.array([28, 255, 255]))
                 ball_pixels = cv2.countNonZero(mask_ball)
@@ -184,6 +208,8 @@ class VisionProcessor(threading.Thread):
 
                 with self.solver.lock:
                     self.solver.current_floor_color = floor_col
+                    self.solver.white_line_ahead = white_line_detected
+                    self.solver.white_line_pixels = white_pixels
                     self.solver.ball_detected = ball_seen
                     self.solver.ball_bearing = ball_bearing
                     self.solver.ball_area = ball_area
@@ -192,9 +218,13 @@ class VisionProcessor(threading.Thread):
                 headless = os.environ.get("HEADLESS", "0") == "1"
                 if not headless:
                     disp_floor = cv2.cvtColor(frame_floor, cv2.COLOR_BGRA2BGR)
-                    cv2.rectangle(disp_floor, (25, 15), (105, 65), (255, 255, 0), 1)
-                    col_bgr = (0, 255, 0) if floor_col == "GREEN" else (0, 0, 255) if floor_col == "RED" else (200, 200, 200)
+                    cv2.rectangle(disp_floor, (35, 75), (93, 102), (255, 255, 0), 1) # ROI piso
+                    cv2.rectangle(disp_floor, (42, 45), (86, 78), (255, 0, 255), 1)  # ROI línea blanca
+                    col_bgr = (0, 255, 0) if floor_col == "GREEN" else (0, 0, 255) if floor_col == "RED" else (0, 165, 255) if floor_col == "ORANGE" else (0, 255, 255) if floor_col == "YELLOW" else (255, 255, 0) if floor_col == "CYAN" else (255, 0, 255) if floor_col == "MAGENTA" else (200, 200, 200)
                     cv2.putText(disp_floor, f"PISO: {floor_col}", (6, 14), cv2.FONT_HERSHEY_SIMPLEX, 0.35, col_bgr, 1)
+
+                    if white_line_detected:
+                        cv2.putText(disp_floor, f"LINEA BLANCA ({white_pixels})", (6, 26), cv2.FONT_HERSHEY_SIMPLEX, 0.30, (255, 255, 255), 1)
 
                     if ball_seen:
                         cv2.circle(disp_floor, (bcx, bcy), 8, (0, 140, 255), 2)
@@ -273,6 +303,12 @@ class TrackBSolver:
         self.ball_detected = False
         self.ball_bearing = 0.0
         self.ball_area = 0.0
+        self.white_line_ahead = False
+        self.white_line_pixels = 0
+        self.s2_current_gx = 4
+        self.s2_current_gy = 1
+        self.s2_target_gy = 1
+        self.s3_step_count = 0
 
         # Sim2Real Noise
         self.motor_bias_left = MOTOR_BIAS_LEFT
@@ -923,11 +959,301 @@ class TrackBSolver:
                 log_debug("  Pelota de golf asegurada en la garra pasiva.     ")
                 log_debug("==================================================")
                 self.print_telemetry("CP1_SUCCESS")
+                self.state = "CP1_ALIGN"
+                self.align_ticks = 0
+                self.state_start_time = t
+
+        # --- SECCIÓN 2: EVASIÓN DE LÍNEAS BLANCAS Y HUECO DE 30 CM ---
+        elif self.state == "CP1_ALIGN":
+            # Auto-alineación perfecta en Checkpoint 1 (3, 1) contra muros laterales
+            err = dl - dr
+            if abs(err) > 0.015 and self.align_ticks < 35:
+                self.align_ticks += 1
+                turn_s = max(-0.9, min(0.9, 2.5 * err))
+                self.set_motors(turn_s, -turn_s)
+            else:
+                self.stop()
+                self.yaw_offset = normalize_angle(drifted_yaw - 0.0)
+                self.current_yaw = 0.0
+                self.target_yaw = 0.0
+                self.gyro_bias_drift = 0.0
+                self.s2_current_gx = 4
+                self.s2_current_gy = 1 # Fila 1 por defecto (y = 0.00m)
+                self.target_waypoint = grid_to_world(4, 1)
+                log_debug(f"[CP1_ALIGN] Alineación completada en Checkpoint 1 (dL={dl:.3f}m, dR={dr:.3f}m). Rumbo reseteado a 0.0°. Entrando a Sección 2...")
+                self.state = "S2_DRIVE_TO_COL_CENTER"
+                self.state_start_time = t
+
+        elif self.state == "S2_DRIVE_TO_COL_CENTER":
+            col_center_x, _ = grid_to_world(self.s2_current_gx, 1)
+            target_y = getattr(self, "s2_target_y", 0.00)
+            yaw_err = normalize_angle(math.radians(0.0) - yaw)
+            y_err = target_y - curr_y
+            lat_corr = max(-0.8, min(0.8, 4.0 * y_err))
+            v_turn = (3.0 * yaw_err) + lat_corr
+            self.set_motors(BASE_SPEED_SLOW - v_turn, BASE_SPEED_SLOW + v_turn)
+
+            if curr_x >= col_center_x - 0.04:
+                self.stop()
+                log_debug(f"[S2] Centro de Columna {self.s2_current_gx} alcanzado ({curr_x:.2f}, {curr_y:.2f}). Inspeccionando carril adelante...")
+                self.state = "S2_INSPECT_LANE_AHEAD"
+                self.inspect_ticks = 0
+
+        elif self.state == "S2_INSPECT_LANE_AHEAD":
+            self.stop()
+            self.inspect_ticks += 1
+            if self.inspect_ticks < 10:
+                return
+
+            with self.lock:
+                line_seen = self.white_line_ahead
+                line_px = self.white_line_pixels
+
+            log_debug(f"[S2] Inspección en Col {self.s2_current_gx}, Y_actual={curr_y:.2f}m: LineaBlanca={line_seen} (px={line_px})")
+
+            # Mapeo de aperturas óptimas reglamentarias (Imagen 2.4):
+            # Col 4 -> Apertura central en Y=+0.15m (gap [0.00, 0.30]m)
+            # Col 5 -> Apertura inferior en Y=+0.00m (gap [-0.15, 0.15]m)
+            # Col 6 -> Apertura superior en Y=+0.30m (gap [0.15, 0.45]m)
+            # Col 7 -> Entrada a Checkpoint 2 en Y=+0.00m
+            if self.s2_current_gx == 4:
+                target_y_gap = 0.15
+            elif self.s2_current_gx == 5:
+                target_y_gap = 0.00
+            elif self.s2_current_gx == 6:
+                target_y_gap = 0.30
+            else:
+                target_y_gap = 0.00
+
+            self.s2_target_y = target_y_gap
+
+            # Si ya estamos alineados con el centro del hueco (diferencia < 4cm) y no hay línea en frente:
+            if abs(curr_y - target_y_gap) <= 0.04 and not line_seen:
+                log_debug(f"[S2] Carril despejado en Y={curr_y:.2f}m. Cruzando frontera directamente...")
+                self.state = "S2_CROSS_BARRIER"
+                self.state_start_time = t
+            else:
+                dy = target_y_gap - curr_y
+                if dy > 0:
+                    self.target_yaw = math.radians(90.0)  # Norte hacia +Y
+                else:
+                    self.target_yaw = math.radians(-90.0) # Sur hacia -Y
+                log_debug(f"[S2 LANE CHANGE] Cambio de carril hacia Y={target_y_gap:+.2f}m (dy={dy:+.2f}m). Girando a {math.degrees(self.target_yaw):.0f}°...")
+                self.state = "S2_LANE_CHANGE_TURN"
+
+        elif self.state == "S2_LANE_CHANGE_TURN":
+            yaw_err = normalize_angle(self.target_yaw - yaw)
+            if abs(yaw_err) > 0.04:
+                turn_s = TURN_KP * yaw_err
+                if abs(turn_s) < MIN_TURN_SPEED:
+                    turn_s = math.copysign(MIN_TURN_SPEED, turn_s)
+                self.set_motors(-turn_s, turn_s)
+            else:
+                self.stop()
+                self.target_waypoint = (curr_x, self.s2_target_y)
+                log_debug(f"[S2] Giro completado. Conduciendo a Y={self.s2_target_y:.2f}m...")
+                self.state = "S2_LANE_CHANGE_DRIVE"
+
+        elif self.state == "S2_LANE_CHANGE_DRIVE":
+            target_y = self.target_waypoint[1]
+            dy = target_y - curr_y
+            yaw_err = normalize_angle(self.target_yaw - yaw)
+            v_turn = 3.0 * yaw_err
+            self.set_motors(BASE_SPEED_SLOW - v_turn, BASE_SPEED_SLOW + v_turn)
+
+            if abs(dy) <= 0.025:
+                self.stop()
+                log_debug(f"[S2] Llegada a posición de hueco Y={curr_y:.2f}m. Reorientando al Este (0°)...")
+                self.target_yaw = math.radians(0.0)
+                self.state = "S2_REORIENT_EAST"
+
+        elif self.state == "S2_REORIENT_EAST":
+            yaw_err = normalize_angle(self.target_yaw - yaw)
+            if abs(yaw_err) > 0.04:
+                turn_s = TURN_KP * yaw_err
+                if abs(turn_s) < MIN_TURN_SPEED:
+                    turn_s = math.copysign(MIN_TURN_SPEED, turn_s)
+                self.set_motors(-turn_s, turn_s)
+            else:
+                self.stop()
+                log_debug(f"[S2] Reorientación al Este completada en Y={curr_y:.2f}m. Cruzando frontera...")
+                self.state = "S2_CROSS_BARRIER"
+                self.state_start_time = t
+
+        elif self.state == "S2_CROSS_BARRIER":
+            if self.s2_current_gx >= 7:
+                # En Columna 7, el siguiente paso es Checkpoint 2 en (8, 1) Y=+0.00m
+                if abs(curr_y - 0.00) > 0.05:
+                    self.s2_target_y = 0.00
+                    self.target_yaw = math.radians(-90.0)
+                    log_debug("[S2] En Col 7. Alineando con Fila 1 (Y=0.00m) para entrar a Checkpoint 2 (8, 1)...")
+                    self.state = "S2_LANE_CHANGE_TURN"
+                    return
+                else:
+                    self.target_waypoint = grid_to_world(8, 1)
+                    self.state = "CP2_CROSS"
+                    return
+
+            next_gx = self.s2_current_gx + 1
+            next_tx, _ = grid_to_world(next_gx, 1)
+            target_y = getattr(self, "s2_target_y", curr_y)
+            yaw_err = normalize_angle(math.radians(0.0) - yaw)
+            y_err = target_y - curr_y
+            lat_corr = max(-0.8, min(0.8, 4.0 * y_err))
+            v_turn = (3.0 * yaw_err) + lat_corr
+            self.set_motors(BASE_SPEED_SLOW - v_turn, BASE_SPEED_SLOW + v_turn)
+
+            boundary_x = (grid_to_world(self.s2_current_gx, 1)[0] + next_tx) / 2.0
+            if curr_x >= boundary_x + 0.05:
+                self.s2_current_gx = next_gx
+                log_debug(f"[S2] Frontera cruzada limpiamente por hueco de 30cm en Y={curr_y:.2f}m. Ahora en Columna {self.s2_current_gx}.")
+                self.state = "S2_DRIVE_TO_COL_CENTER"
+
+        # --- CHECKPOINT 2: PARADA, AUTO-ALINEACIÓN TOF Y REDUCCIÓN DE RUIDO ---
+        elif self.state == "CP2_CROSS":
+            tx, ty = grid_to_world(8, 1)
+            yaw_err = normalize_angle(math.radians(0.0) - yaw)
+            y_err = ty - curr_y
+            lat_corr = max(-0.8, min(0.8, 4.0 * y_err))
+            v_turn = (3.0 * yaw_err) + lat_corr
+            self.set_motors(BASE_SPEED_SLOW - v_turn, BASE_SPEED_SLOW + v_turn)
+
+            with self.lock:
+                floor_color = self.current_floor_color
+
+            if curr_x >= tx - 0.04 or (curr_x >= tx - 0.12 and floor_color == "RED"):
+                self.stop()
+                self.current_grid_cell = (8, 1)
+                log_debug("==================================================")
+                log_debug(f"  ¡CHECKPOINT 2 (8, 1) ALCANZADO! ({curr_x:.2f}, {curr_y:.2f})")
+                log_debug("  Piso ROJO confirmado. Deteniéndose para auto-alineación...")
+                log_debug("==================================================")
+                self.state = "CP2_ALIGN"
+                self.align_ticks = 0
+                self.state_start_time = t
+
+        elif self.state == "CP2_ALIGN":
+            err = dl - dr
+            if abs(err) > 0.015 and self.align_ticks < 35:
+                self.align_ticks += 1
+                turn_s = max(-0.9, min(0.9, 2.5 * err))
+                self.set_motors(turn_s, -turn_s)
+            else:
+                self.stop()
+                self.yaw_offset = normalize_angle(drifted_yaw - 0.0)
+                self.current_yaw = 0.0
+                self.target_yaw = 0.0
+                self.gyro_bias_drift = 0.0
+                log_debug(f"[CP2_ALIGN] Alineación completada en CP2 (dL={dl:.3f}m, dR={dr:.3f}m). Yaw reseteado a 0.0°. Entrando a Sección 3...")
+                self.state = "S3_ENTER"
+                self.state_start_time = t
+
+        # --- SECCIÓN 3: LABERINTO DE COLORES (REFERENCIA ABSOLUTA RESPECTO A ESTE 0°) ---
+        elif self.state == "S3_ENTER":
+            tx, ty = grid_to_world(9, 1)
+            yaw_err = normalize_angle(math.radians(0.0) - yaw)
+            v_turn = 3.0 * yaw_err
+            self.set_motors(BASE_SPEED_SLOW - v_turn, BASE_SPEED_SLOW + v_turn)
+
+            if curr_x >= tx - 0.04:
+                self.stop()
+                self.current_grid_cell = (9, 1)
+                log_debug(f"[S3] Ingreso a Sección 3 confirmado en celda (9, 1) ({curr_x:.2f}, {curr_y:.2f}). Leyendo color de baldosa...")
+                self.state = "S3_READ_CELL"
+                self.inspect_ticks = 0
+
+        elif self.state == "S3_READ_CELL":
+            self.stop()
+            self.inspect_ticks += 1
+            if self.inspect_ticks < 10:
+                return
+
+            with self.lock:
+                floor_color = self.current_floor_color
+
+            log_debug(f"[S3_READ_CELL] Celda {self.current_grid_cell}: Color detectado = {floor_color}")
+
+            if floor_color == "GREEN" and (self.current_grid_cell == (11, 3) or curr_y >= 0.45):
+                self.stop()
+                log_debug("==================================================")
+                log_debug(f"  ¡BALDOSA VERDE DE META (FIN) ALCANZADA EN {self.current_grid_cell}! ")
+                log_debug("==================================================")
                 self.state = "MISSION_SUCCESS"
+                return
+
+            # REGLA DEL USUARIO (Referencia Absoluta respecto al eje de la pista Este 0°):
+            # Naranja  = Adelante  (Este 0°)
+            # Cyan     = Derecha   (Sur -90°)
+            # Amarillo = Izquierda (Norte +90°)
+            # Magenta  = Atrás     (Oeste 180°)
+            if floor_color == "ORANGE":
+                target_deg = 0.0
+            elif floor_color == "CYAN":
+                target_deg = -90.0
+            elif floor_color == "YELLOW":
+                target_deg = 90.0
+            elif floor_color == "MAGENTA":
+                target_deg = 180.0
+            else:
+                target_deg = math.degrees(yaw)
+
+            self.target_yaw = math.radians(target_deg)
+            log_debug(f"[S3] Rumbo absoluto comandado: {target_deg:+.1f}° para color {floor_color}")
+            self.state = "S3_TURN_TO_HEADING"
+
+        elif self.state == "S3_TURN_TO_HEADING":
+            yaw_err = normalize_angle(self.target_yaw - yaw)
+            if abs(yaw_err) > 0.04:
+                turn_s = TURN_KP * yaw_err
+                if abs(turn_s) < MIN_TURN_SPEED:
+                    turn_s = math.copysign(MIN_TURN_SPEED, turn_s)
+                self.set_motors(-turn_s, turn_s)
+            else:
+                self.stop()
+                gx, gy = self.current_grid_cell
+                hdg_deg = int(round(math.degrees(self.target_yaw))) % 360
+                if hdg_deg in [0, 360]:
+                    next_cell = (gx + 1, gy)
+                elif hdg_deg == 90:
+                    next_cell = (gx, gy + 1)
+                elif hdg_deg in [270, -90]:
+                    next_cell = (gx, gy - 1)
+                elif hdg_deg in [180, -180]:
+                    next_cell = (gx - 1, gy)
+                else:
+                    next_cell = (gx + 1, gy)
+
+                self.target_grid_cell = next_cell
+                self.target_waypoint = grid_to_world(next_cell[0], next_cell[1])
+                log_debug(f"[S3] Rumbo {math.degrees(self.target_yaw):.1f}° alineado. Avanzando a celda {next_cell} en {self.target_waypoint}...")
+                self.state = "S3_DRIVE_TO_CELL"
+                self.state_start_time = t
+
+        elif self.state == "S3_DRIVE_TO_CELL":
+            tx, ty = self.target_waypoint
+            dx = tx - curr_x
+            dy = ty - curr_y
+            dist = math.hypot(dx, dy)
+
+            desired_heading = math.atan2(dy, dx)
+            yaw_err = normalize_angle(desired_heading - yaw)
+            v_turn = 3.2 * yaw_err
+
+            self.set_motors(BASE_SPEED_SLOW - v_turn, BASE_SPEED_SLOW + v_turn)
+
+            with self.lock:
+                floor_color = self.current_floor_color
+
+            if dist <= 0.038:
+                self.stop()
+                self.current_grid_cell = self.target_grid_cell
+                log_debug(f"[S3] Celda alcanzada: {self.current_grid_cell} ({curr_x:.2f}, {curr_y:.2f}). Leyendo color de baldosa...")
+                self.state = "S3_READ_CELL"
+                self.inspect_ticks = 0
 
         elif self.state == "MISSION_SUCCESS":
             self.stop()
-            self.update_oled("CP1: ROJO ALCANZADO", "PELOTA: ASEGURADA")
+            self.update_oled("PISTA B COMPLETA", "META FIN ALCANZADA")
 
 def main():
     solver = TrackBSolver()

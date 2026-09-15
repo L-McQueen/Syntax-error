@@ -1,10 +1,8 @@
 {
-  "s1_test": true,
+  "s1_test": false,
   "test_mode": false,
   "open_side": "South",
-  "start_cell": [
-    0,
-    -1
-  ],
-  "fixed": false
+  "start_cell": [0, -1],
+  "fixed": true,
+  "s2_gaps": [0.15, 0.0, 0.3]
 }

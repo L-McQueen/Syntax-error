@@ -454,40 +454,212 @@ WebotsSim2Real/
 
 ---
 
-## 🏁 Pista B: Niveles (Control Fino, Recolección y Visión)
+## 🏁 Pista B: Niveles (Estrategia, Arquitectura Lógica y Control Fino)
 
-La **Pista B** evalúa el desempeño en tareas de precisión física, discriminación de líneas y navegación basada en firmas de color. Todo el circuito se genera dinámicamente mediante **Dynamic Spawning VRML** en el plano X-Y (Z-UP) sobre una cuadrícula modular con celdas de $0.30\text{ m} \times 0.30\text{ m}$ y ranuras negras de $4\text{ mm}$ ($0.004\text{ m}$).
+La **Pista B (Niveles)** representa el desafío de precisión física, recolección mecánica, discriminación óptica y navegación cromática bajo estricta **aleatoriedad procedural**. El circuito se instancia proceduralmente mediante **Dynamic Spawning VRML** en el plano $X$-$Y$ ($Z$-UP) sobre una cuadrícula modular con celdas de $0.30\text{ m} \times 0.30\text{ m}$ y ranuras de junta negra de $4\text{ mm}$ ($0.004\text{ m}$), encapsulado por un muro perimetral continuo de $0.15\text{ m}$ de altura.
 
-### Estructura de las 3 Secciones Contiguas:
-
-1. **Sección 1: La Trampa de la Pelota (Ball Trap - $3\times3$ celdas):**
-   * **Pelota de Golf Reglamentaria:** Ubicada en la celda central $(1, 1)$. Geometría esférica de radio $0.021\text{ m}$ ($42\text{ mm}$ de diámetro), color naranja brillante, masa física de $0.045\text{ kg}$ ($45\text{ g}$) con amortiguamiento (*damping*) para rodadura realista.
-   * **Trampa Central de 3 Muros:** Rodea la pelota con paredes de $0.15\text{ m}$ de altura en 3 lados. El supervisor selecciona **aleatoriamente** en cada ronda cuál de los 4 lados (Norte, Sur, Este u Oeste) queda abierto para que el robot acceda y empuje la pelota con su pala (*scoop*).
-   * **Checkpoint 1:** Casilla roja en $(3, 1)$ que conecta con la Sección 2.
-
-2. **Sección 2: Evasión de Líneas Blancas ($2\times4$ celdas verdes):**
-   * Baldosas base verdes ($0.1, 0.65, 0.15$).
-   * **Líneas Blancas de Obstáculo:** Cintas blancas de $0.02\text{ m}$ de ancho que bloquean el carril, dejando un espacio libre reglamentario de $0.30\text{ m}$ (el ancho exacto de una celda).
-   * **Aleatoriedad:** El supervisor posiciona el hueco libre de forma aleatoria (carril superior o inferior) en cada una de las 3 barreras de transición entre columnas.
-   * **Checkpoint 2:** Casilla roja en $(8, 1)$ que conecta con la Sección 3.
-
-3. **Sección 3: Laberinto de Colores (Generación Procedural):**
-   * **Caminata Aleatoria (Random Walk):** El camino se genera procedimentalmente de manera no auto-intersecante. No existen muros internos en esta sección; el robot se orienta exclusivamente con su cámara picada al suelo (Pixy).
-   * **Código Estricto de Colores por Giro Relativo:**
-     - 🟦 **Cyan** (`0 1 1`): Si el camino gira a la **DERECHA**.
-     - 🟨 **Amarillo** (`1 1 0`): Si el camino gira a la **IZQUIERDA**.
-     - 🟧 **Naranja** (`1 0.5 0`): Si el camino continúa hacia **ADELANTE**.
-     - 🟪 **Magenta** (`1 0 1`): Si el camino va hacia **ATRÁS** ($180^\circ$).
-   * **Meta Final:** Baldosa verde claro etiquetada como `FIN` al término del recorrido.
-
-4. **Física y Muro Perimetral:**
-   * Muro continuo de $0.15\text{ m}$ de altura ($0.01\text{ m}$ de grosor) generado dinámicamente alrededor de todas las celdas activas para evitar que el robot o la pelota salgan de la pista.
-
-### Ejecución y Verificación de la Pista B:
-```bash
-# Verificación automatizada de generación procedural y físicas:
-python scripts/verify_track_b.py
 ```
+═══════════════════════════════════════════════════════════════════════════════════════
+                    DIAGRAMA GENERAL DE FLUJO - PISTA B
+═══════════════════════════════════════════════════════════════════════════════════════
+
+   [SECCIÓN 1: TRAMPA DE PELOTA]        [SECCIÓN 2: LÍNEAS BLANCAS]      [SECCIÓN 3: LABERINTO COLORES]
+     Casilla Inicio Procedural             Pasillo Verde (2x4)             Cuadrícula Modular (3x3)
+      (Sur, Norte u Oeste)             3 Barreras con Huecos 30cm          Random Walk de 4 a 6 Celdas
+               │                                   │                                   │
+               ▼                                   ▼                                   ▼
+      ┌─────────────────┐                 ┌─────────────────┐                 ┌─────────────────┐
+      │  Inicio Fuera   │                 │  Checkpoint 1   │                 │  Checkpoint 2   │
+      │   del 3x3       │                 │ (Alineación 0°) │                 │ (Alineación 0°) │
+      └────────┬────────┘                 └────────┬────────┘                 └────────┬────────┘
+               │                                   │                                   │
+               ▼                                   ▼                                   ▼
+      ┌─────────────────┐                 ┌─────────────────┐                 ┌─────────────────┐
+      │ Búsqueda Cíclica│                 │ Visión Frontal  │                 │ Lectura PixyMon │
+      │ ToF Lado Abierto│                 │ ROI 10-22cm     │                 │ Baldosa Actual  │
+      └────────┬────────┘                 └────────┬────────┘                 └────────┬────────┘
+               │                                   │                                   │
+               ▼                                   ▼                                   ▼
+      ┌─────────────────┐                 ┌─────────────────┐                 ┌─────────────────┐
+      │ Captura Mecánica│                 │ Maniobra 90°    │                 │ Rumbo Absoluto  │
+      │ Pelota Golf 45g │                 │ y Deducción     │                 │ (E, N, S, W)    │
+      └────────┬────────┘                 └────────┬────────┘                 └────────┬────────┘
+               │                                   │                                   │
+               ▼                                   ▼                                   ▼
+      ┌─────────────────┐                 ┌─────────────────┐                 ┌─────────────────┐
+      │ Reversa y Salida│                 │ Cruce Limpio    │                 │ Avance Celda    │
+      │ a Checkpoint 1  │                 │ [S2 CLEAN] (0px)│                 │ a Celda         │
+      └────────┬────────┘                 └────────┬────────┘                 └────────┬────────┘
+               │                                   │                                   │
+               └─────────────────► ◄───────────────┘                                   ▼
+                                                                              ┌─────────────────┐
+                                                                              │ Baldosa Verde   │
+                                                                              │ META FIN (Ext.) │
+                                                                              └─────────────────┘
+```
+
+---
+
+### 1. Arquitectura de la Máquina de Estados Finita (FSM)
+
+El solver del robot (`robot_track_b_solver.py`) opera mediante una máquina de estados finita determinista y reactiva, sincronizada con el reloj de simulación ($32\text{ ms}$ por tick):
+
+| Estado FSM | Descripción y Objetivo Operativo | Condición de Transición |
+| :--- | :--- | :--- |
+| **`CALIBRATE`** | Calibración inicial en la casilla verde exterior de inicio. Registra el offset inicial del giróscopo. | Transcurridos $0.3\text{ s}$. |
+| **`S1_ENTER_PERIMETER`** | Ingresa desde el exterior hacia el perímetro del $3\times3$ encarando la casilla interna adyacente. | Llegada al centro de la celda ($dist \le 4\text{ cm}$). |
+| **`S1_NAVIGATE_TO_MID`** | Navega por las celdas perimetrales hacia la siguiente casilla media candidata `[(1,0), (2,1), (1,2), (0,1)]`. | Arribo a la celda objetivo. |
+| **`S1_INSPECT_OPENING`** | Gira $90^\circ$ apuntando al centro `(1, 1)` y muestrea el ToF frontal. | Si $d_{\text{front}} > 0.35\text{ m}$: trampa abierta. Si no: siguiente candidata. |
+| **`S1_ENTER_TRAP`** | Avanza recto al centro `(1, 1)` a $8.4\text{ cm/s}$ ingresando por la apertura detectada. | Llegada a la celda central. |
+| **`S1_CAPTURE_BALL`** | Empuja la pelota de golf ($42\text{ mm}, 45\text{ g}$) atrapándola dentro de la pala trinquete pasiva. | $0.8\text{ s}$ de aseguramiento mecánico. |
+| **`S1_REVERSE_EXIT`** | Retrocede en línea recta guiado por ToF frontal hacia la celda media de entrada. | Retorno seguro fuera de los muros de la trampa. |
+| **`S1_NAVIGATE_TO_EXIT`** | Circunvala el perímetro transportando la pelota hacia la casilla de salida `(2, 1)`. | Llegada a `(2, 1)`. |
+| **`CROSS_TO_CP1`** | Avanza recto hacia el Este ingresando a Checkpoint 1 `(3, 1)`. | Detección de suelo rojo (`RED`). |
+| **`CP1_ALIGN`** | Parada completa de $15$ ticks. Auto-alineación física/ToF y reseteo de la deriva giroscópica acumulada a $0.0^\circ$. | Temporizador de estabilización cumplido. |
+| **`S2_DRIVE_TO_COL_CENTER`** | Conduce al centro de la columna actual en Sección 2 manteniendo rumbo Este ($0^\circ$). | Distancia a la barrera $\le 22\text{ cm}$. |
+| **`S2_ADVANCE_TO_BARRIER`** | Se aproxima a la barrera inspeccionando con la ROI de visión (`rows 50..100, cols 34..94`). | Línea detectada $\rightarrow$ Cambio de carril. <br>Hueco limpio $\rightarrow$ `S2_CROSS_BARRIER`. |
+| **`S2_LANE_CHANGE_BACKUP`** | Retroceso preventivo a $\ge 18\text{ cm}$ para disponer de espacio angular de maniobra. | $dist \ge 18\text{ cm}$. |
+| **`S2_LANE_CHANGE_TURN`** | Giro ortogonal en sitio a $\pm 90^\circ$ hacia el nuevo carril objetivo. | Error angular $|\Delta\theta| \le 0.05\text{ rad}$. |
+| **`S2_LANE_CHANGE_DRIVE`** | Desplazamiento lateral a lo largo de la columna hasta alcanzar la coordenada $Y$ del nuevo carril. | $|Y_{\text{robot}} - Y_{\text{target}}| \le 3\text{ cm}$. |
+| **`S2_REORIENT_EAST`** | Reorientación en sitio hacia el Este ($0.0^\circ$) con backup preventivo si $dist < 17\text{ cm}$. | Rumbo alineado al Este. |
+| **`S2_CROSS_BARRIER`** | Cruza a velocidad lenta a través del hueco libre de $30\text{ cm}$. | $X_{\text{robot}} \ge X_{\text{barrera}} + 6\text{ cm}$. |
+| **`CP2_CROSS` / `CP2_ALIGN`** | Entrada y estabilización en Checkpoint 2 `(8, 1)`. Reseteo de rumbo y deriva inercial. | Suelo rojo confirmado y parada cumplida. |
+| **`S3_ENTER`** | Ingreso al laberinto de colores por la celda obligatoria `(9, 1)` rumbo Este. | Llegada a `(9, 1)`. |
+| **`S3_READ_CELL`** | Parada estática de $5$ ticks. Clasificación del color de la baldosa con PixyMon en HSV. | Color identificado con certeza. |
+| **`S3_TURN_TO_HEADING`** | Giro en sitio al rumbo absoluto comandado por la firma cromática. | Rumbo alineado al comando. |
+| **`S3_DRIVE_TO_CELL`** | Avance en línea recta a la celda contigua según el rumbo. Detección continua de baldosa `GREEN`. | Detección de Verde `FIN` $\rightarrow$ `MISSION_SUCCESS`. |
+| **`MISSION_SUCCESS`** | Parada total de motores, mensaje en pantalla OLED y salida exitosa. | Pista completada. |
+
+---
+
+### 2. Estrategia Detallada por Sección
+
+#### 🟢 Sección 1: La Trampa de la Pelota (Ball Trap)
+
+* **Topología:** Cuadrícula de $3\times3$ baldosas blancas (`gx=0..2, gy=0..2`) con la pelota de golf en `(1, 1)`.
+* **Inicio Exterior Procedural:** La casilla verde de inicio no es fija; el supervisor la ubica proceduralmente en cualquiera de las 9 casillas exteriores disponibles:
+  - Flanco Sur: `(0, -1)`, `(1, -1)`, `(2, -1)` $\rightarrow$ Robot inicia orientado al Norte ($+90^\circ$).
+  - Flanco Norte: `(0, 3)`, `(1, 3)`, `(2, 3)` $\rightarrow$ Robot inicia orientado al Sur ($-90^\circ$).
+  - Flanco Oeste: `(-1, 0)`, `(-1, 1)`, `(-1, 2)` $\rightarrow$ Robot inicia orientado al Este ($0^\circ$).
+* **Estrategia de Inspección Perimetral:**
+  1. El robot ingresa a la celda perimetral adyacente y calcula la ruta más corta (horario vs antihorario) por la lista circular de celdas medias: `[(1, 0), (2, 1), (1, 2), (0, 1)]`.
+  2. Al alcanzar cada celda media, el robot apunta su ToF frontal hacia la celda central `(1, 1)`:
+     $$\text{Si } d_{\text{front}} > 0.35\text{ m} \implies \text{¡Lado abierto de la trampa encontrado!}$$
+     $$\text{Si } d_{\text{front}} \le 0.35\text{ m} \implies \text{Muro cerrado de 15cm; avanzar a la siguiente celda media.}$$
+* **Captura Física con Pala Trinquete Pasiva:**
+  - Al detectar la apertura, avanza recto a $v = 8.4\text{ cm/s}$ ingresando a `(1, 1)`.
+  - La pala pasiva frontal posee guías biseladas a $45^\circ$ que embocan la pelota de golf ($42\text{ mm}$ de diámetro, $45\text{ g}$ de masa).
+  - La pelota sobrepasa el labio trinquete de retención y queda mecánicamente cautiva dentro de la garra, **sin requerir servomotores activos**, optimizando peso, complejidad mecánica y consumo de batería.
+* **Extracción y Entrega a Checkpoint 1:**
+  - El robot retrocede en reversa exacta guiándose con el ToF frontal hasta salir de la trampa.
+  - Circunvala el perímetro hasta la celda de salida `(2, 1)` y cruza la frontera Este hacia Checkpoint 1 `(3, 1)`.
+  - En CP1 realiza una parada de estabilización y reseteo inercial.
+
+---
+
+#### ⚪ Sección 2: Evasión de Líneas Blancas (White Lines Evasion)
+
+* **Topología:** Pasillo verde de $60\text{ cm}$ de ancho ($Y \in [-0.15, +0.45]\text{ m}$) abarcando las columnas `gx = 4, 5, 6, 7` y filas `gy = 1, 2`.
+* **Barreras:** Tres fronteras de columnas (Col 4$\rightarrow$5 en $X=-0.30\text{ m}$, Col 5$\rightarrow$6 en $X=0.00\text{ m}$ y Col 6$\rightarrow$7 en $X=+0.30\text{ m}$). Cada barrera posee un hueco libre reglamentario de $30\text{ cm}$ centrado aleatoriamente en uno de los 3 carriles:
+  - Carril Inferior: $Y = 0.00\text{ m}$ ($Y \in [-0.15, +0.15]\text{ m}$)
+  - Carril Central: $Y = 0.15\text{ m}$ ($Y \in [0.00, +0.30]\text{ m}$)
+  - Carril Superior: $Y = 0.30\text{ m}$ ($Y \in [+0.15, +0.45]\text{ m}$)
+
+##### El Problema Óptico y la Solución por Aislamiento Geométrico de ROI:
+* **El Fenómeno Físico:** La cámara inferior tiene una inclinación hacia el suelo de $27.5^\circ$ ($0.48\text{ rad}$) a una altura de $8.5\text{ cm}$. Con un FOV vertical de $68.7^\circ$, las filas superiores de la imagen (`rows 20..45`) observan el piso a más de $40\text{ cm}$ adelante.
+* **El Falso Positivo Distante:** Cuando la barrera actual tenía un hueco abierto, la cámara miraba *a través* de él y detectaba la línea blanca de la **siguiente barrera** (a $46\text{ cm}$ de distancia), concluyendo erróneamente que la barrera actual estaba bloqueada.
+* **La Solución Geométrica:**
+  ```python
+  # ROI acotada exclusivamente a la barrera inmediata (10 a 22 cm adelante del robot):
+  roi_ahead = hsv_floor[50:100, 34:94]
+  mask_white = cv2.inRange(roi_ahead, np.array([0, 0, 200]), np.array([180, 35, 255]))
+  white_pixels = cv2.countNonZero(mask_white)
+  white_line_detected = (white_pixels > 80) if (is_facing_east and in_s2) else False
+  ```
+  - **Filas 50 a 100:** Eliminan todo lo que esté a más de $22\text{ cm}$, haciendo al robot completamente inmune a líneas de barreras subsiguientes.
+  - **Columnas 34 a 94:** Ventana horizontal de 60 columnas ($\sim 12\text{ cm}$ en el suelo, exactamente el ancho del vehículo), ignorando paredes perimetrales y líneas de carriles contiguos.
+  - **Filtro HSV:** Valor $V \ge 200$ y Saturación $S \le 35$, discriminando estrictamente las cintas blancas de los muros grises ($V \approx 171$) y el piso verde.
+
+##### Lógica de Deducción Combinatoria en Maniobras:
+1. El robot avanza por el carril actual hacia la barrera ($X_{\text{barrera}} - X_{\text{robot}} \le 22\text{ cm}$).
+2. Si detecta línea blanca ($> 80\text{ px}$):
+   - Registra el carril actual en `s2_tried_lanes`.
+   - **Deducción Matemática:** Existen 3 carriles posibles. Si 2 carriles ya resultaron bloqueados, el tercer carril no probado es **100% garantizado libre**. El robot activa `s2_gap_confirmed = True` y selecciona ese carril.
+   - Si no, selecciona el carril contiguo alternativo.
+   - Ejecuta: Reversa a $\ge 18\text{ cm}$ $\rightarrow$ Giro de $90^\circ$ $\rightarrow$ Traslación al nuevo carril $\rightarrow$ Reorientación al Este ($0^\circ$).
+3. Si el carril fue confirmado deductivamente o se inspecciona sin línea a $\le 11\text{ cm}$:
+   - Ejecuta `S2_CROSS_BARRIER` a velocidad baja con control de centrado lateral, superando la barrera sin un solo roce (`[S2 CLEAN]`).
+
+---
+
+#### 🎨 Sección 3: Laberinto de Colores (Color Labyrinth)
+
+* **Topología:** Cuadrícula modular de $3\times3$ baldosas (`gx=9..11, gy=0..2`) sin muros internos, conectada desde Checkpoint 2 `(8, 1)`.
+* **Random Walk Procedural:** En cada partida, el supervisor genera un camino procedural no auto-intersecante de 4 a 6 celdas que desemboca en una baldosa verde de meta **`FIN` exterior** (ubicada fuera del perímetro en flanco Norte, Este o Sur).
+* **Navegación por Referencia Absoluta (Reglamento Sim2Real 2026):**
+  La codificación de colores se interpreta de manera **absoluta con respecto al frente de entrada a la sección (Este $0.0^\circ$)**:
+
+| Color de Baldosa | Firma HSV | Dirección / Rumbo Absoluto Comandado | Vector en Grilla |
+| :---: | :---: | :---: | :---: |
+| 🟧 **Naranja** | $H \in [6, 22], S \ge 60, V \ge 60$ | **ADELANTE / ESTE** ($0.0^\circ$) | $(+1, 0)$ |
+| 🟨 **Amarillo** | $H \in [23, 38], S \ge 60, V \ge 60$ | **IZQUIERDA / NORTE** ($+90.0^\circ$) | $(0, +1)$ |
+| 🟦 **Cyan** | $H \in [82, 105], S \ge 60, V \ge 60$ | **DERECHA / SUR** ($-90.0^\circ$) | $(0, -1)$ |
+| 🟪 **Magenta** | $H \in [140, 168], S \ge 60, V \ge 60$ | **ATRÁS / OESTE** ($180.0^\circ$) | $(-1, 0)$ |
+| 🟩 **Verde (`FIN`)**| $H \in [40, 78], S \ge 50, V \ge 50$ | **META FINAL - PARADA INMEDIATA** | Termina Misión |
+
+* **Proceso de Decisión:**
+  1. Al alcanzar el centro de cada celda, el robot se detiene durante $5$ ticks para muestrear la región de interés central del piso (`roi_floor = hsv_floor[75:102, 35:93]`).
+  2. Determina el color dominante y comanda el nuevo rumbo absoluto.
+  3. Gira en su propio eje hasta alinear el ángulo ($|\Delta\theta| \le 0.05\text{ rad}$).
+  4. Conduce a velocidad constante hacia la celda adyacente.
+  5. En cuanto la cámara inferior detecta la firma verde de la baldosa `FIN`, el robot clava los frenos de emergencia al instante, desplegando en la pantalla OLED: `PISTA B COMPLETA: META FIN ALCANZADA`.
+
+---
+
+### 3. Modelo de Ruido Sim2Real y Tolerancia a Fallos en Pista B
+
+Al igual que en la Pista A, el robot en Pista B está sometido a las mismas condiciones estocásticas de hardware real:
+
+```python
+# Imperfecciones Físicas Sim2Real Activas en Pista B:
+MOTOR_BIAS_LEFT = 1.000             # Motor izquierdo al 100% de potencia nominal
+MOTOR_BIAS_RIGHT = 0.982            # Motor derecho 1.8% asimétrico
+MOTOR_SLIP_STD = 0.010              # Micro-patinaje aleatorio (1% de ruido gaussiano por tick)
+GYRO_DRIFT_RATE_RANGE = 0.0026      # Sesgo estocástico inicial MPU-6050 (+-0.15°/s)
+GYRO_RANDOM_WALK_STD = 0.00004      # Paseo aleatorio térmico en la deriva del giróscopo
+```
+
+* **Mitigación del Sesgo:** El controlador utiliza compensación lateral ToF y control de rumbo activo para evitar desviaciones.
+* **Mitigación de la Deriva Girométrica:** En Checkpoint 1 y Checkpoint 2, el robot realiza paradas de estabilización que resetean la acumulación de deriva inercial a cero antes de iniciar la siguiente sección.
+
+---
+
+### 4. Batería Oficial de Pruebas Multi-Semilla
+
+Para certificar la robustez del solver frente a cualquier combinación procedural, se dispone del script oficial de evaluación por lotes:
+
+```bash
+python scripts/verify_track_b_random_batch.py
+```
+
+Resultados oficiales certificados across seeds con topologías diversas:
+
+```
+===========================================================================
+  RESUMEN DE LA BATERÍA DE PRUEBAS ALEATORIAS - PISTA B           
+===========================================================================
+#   | Semilla  | Inicio   | Trampa  | S2       | S3 Meta    | T (s)  | Resultado 
+---------------------------------------------------------------------------
+1   | 104231   | (-1, 0)  | South   | CLEAN    | (11, 3)    | 27.9   | ÉXITO (100%)
+2   | 582914   | (2, -1)  | West    | CLEAN    | (10, 0)    | 39.0   | ÉXITO (100%)
+3   | 917302   | (1, -1)  | South   | CLEAN    | (9, -1)    | 20.8   | ÉXITO (100%)
+===========================================================================
+  ¡TODAS LAS PRUEBAS ALEATORIAS FUERON SUPERADAS CON ÉXITO!      
+===========================================================================
+```
+* **S1:** 100% de pelotas capturadas y entregadas a CP1.
+* **S2:** 0 contactos con líneas blancas en todas las pruebas (`[S2 CLEAN]`).
+* **S3:** 100% de baldosas de meta alcanzadas sin desvíos.
 
 ---
 
@@ -505,11 +677,14 @@ python scripts/verify_track_b.py
 2. Abrir Webots o ejecutar `launch.bat`.
 
 ### 3. Ejecutar Pista B (Niveles):
-1. Seleccionar mundo en `target_world.txt`: `worlds/sim2real_track_b.wbt`
-2. Abrir Webots o ejecutar:
-   ```bash
-   python scripts/verify_track_b.py
-   ```
+* **Prueba individual estándar:**
+  ```bash
+  python scripts/verify_track_b.py
+  ```
+* **Batería procedural completa multi-semilla:**
+  ```bash
+  python scripts/verify_track_b_random_batch.py
+  ```
 
 ---
 

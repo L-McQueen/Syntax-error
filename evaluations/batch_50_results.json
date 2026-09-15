@@ -1,0 +1,979 @@
+[
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": 4.0,
+      "dy": -0.2
+    },
+    "run": 1,
+    "duration_sec": 12.011974096298218
+  },
+  {
+    "status": "GOAL_REACHED_RETURN_FAILED",
+    "found_red": true,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "27"
+    ],
+    "colors": [
+      "YELLOW",
+      "CYAN",
+      "RED",
+      "ORANGE",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": 3.4,
+      "dy": -12.5
+    },
+    "run": 2,
+    "duration_sec": 47.02248525619507
+  },
+  {
+    "status": "ALL_EXPLORED",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": true,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [],
+    "final_offset_cm": {
+      "dx": -0.0,
+      "dy": 0.0
+    },
+    "run": 3,
+    "duration_sec": 6.0082738399505615
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "YELLOW",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 1.2,
+      "dy": 0.2
+    },
+    "run": 4,
+    "duration_sec": 44.02303504943848
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "47"
+    ],
+    "colors": [
+      "RED",
+      "MAGENTA",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 5.2,
+      "dy": -1.9
+    },
+    "run": 5,
+    "duration_sec": 35.0205295085907
+  },
+  {
+    "status": "GOAL_REACHED_RETURN_FAILED",
+    "found_red": true,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "37"
+    ],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 13.0,
+      "dy": 3.8
+    },
+    "run": 6,
+    "duration_sec": 49.02332782745361
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "46"
+    ],
+    "colors": [
+      "RED",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 5.4,
+      "dy": -0.2
+    },
+    "run": 7,
+    "duration_sec": 23.015427112579346
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED"
+    ],
+    "final_offset_cm": {
+      "dx": 3.8,
+      "dy": -2.1
+    },
+    "run": 8,
+    "duration_sec": 19.012442350387573
+  },
+  {
+    "status": "ALL_EXPLORED",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": true,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [],
+    "final_offset_cm": {
+      "dx": -0.0,
+      "dy": 0.0
+    },
+    "run": 9,
+    "duration_sec": 6.009160280227661
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "17",
+      "38"
+    ],
+    "colors": [
+      "ORANGE",
+      "YELLOW",
+      "MAGENTA",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 131.5,
+      "dy": -66.9
+    },
+    "run": 10,
+    "duration_sec": 56.02785086631775
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "ORANGE"
+    ],
+    "final_offset_cm": {
+      "dx": 3.3,
+      "dy": 3.2
+    },
+    "run": 11,
+    "duration_sec": 31.016968250274658
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "22"
+    ],
+    "colors": [
+      "RED",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": -22.0,
+      "dy": -0.1
+    },
+    "run": 12,
+    "duration_sec": 15.010888576507568
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": -0.7,
+      "dy": -0.7
+    },
+    "run": 13,
+    "duration_sec": 45.02135515213013
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "17",
+      "3"
+    ],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 0.5,
+      "dy": 3.8
+    },
+    "run": 14,
+    "duration_sec": 47.02259850502014
+  },
+  {
+    "status": "GOAL_REACHED_RETURN_FAILED",
+    "found_red": true,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "34"
+    ],
+    "colors": [
+      "YELLOW",
+      "CYAN",
+      "RED",
+      "ORANGE",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": 2.8,
+      "dy": -9.9
+    },
+    "run": 15,
+    "duration_sec": 51.02825951576233
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "YELLOW",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": -1.2,
+      "dy": 3.4
+    },
+    "run": 16,
+    "duration_sec": 31.015637159347534
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "17"
+    ],
+    "colors": [
+      "ORANGE",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": 24.9,
+      "dy": -25.5
+    },
+    "run": 17,
+    "duration_sec": 50.02459502220154
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED"
+    ],
+    "final_offset_cm": {
+      "dx": 5.2,
+      "dy": -0.7
+    },
+    "run": 18,
+    "duration_sec": 12.00996708869934
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED"
+    ],
+    "final_offset_cm": {
+      "dx": 5.0,
+      "dy": -1.1
+    },
+    "run": 19,
+    "duration_sec": 20.014321088790894
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "3"
+    ],
+    "colors": [
+      "RED",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": 1.1,
+      "dy": -3.1
+    },
+    "run": 20,
+    "duration_sec": 26.0174663066864
+  },
+  {
+    "status": "GOAL_REACHED_RETURN_FAILED",
+    "found_red": true,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "9"
+    ],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "MAGENTA",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 3.5,
+      "dy": 11.4
+    },
+    "run": 21,
+    "duration_sec": 54.02880024909973
+  },
+  {
+    "status": "GOAL_REACHED_RETURN_FAILED",
+    "found_red": true,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "40"
+    ],
+    "colors": [
+      "YELLOW",
+      "CYAN",
+      "RED",
+      "ORANGE",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": 0.1,
+      "dy": -0.5
+    },
+    "run": 22,
+    "duration_sec": 48.02551507949829
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "ORANGE"
+    ],
+    "final_offset_cm": {
+      "dx": 3.3,
+      "dy": -2.0
+    },
+    "run": 23,
+    "duration_sec": 11.011613607406616
+  },
+  {
+    "status": "ALL_EXPLORED",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": true,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [],
+    "final_offset_cm": {
+      "dx": -0.0,
+      "dy": 0.0
+    },
+    "run": 24,
+    "duration_sec": 6.00693154335022
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "5"
+    ],
+    "colors": [
+      "YELLOW",
+      "CYAN",
+      "RED",
+      "ORANGE",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": -1.4,
+      "dy": 1.5
+    },
+    "run": 25,
+    "duration_sec": 40.02017521858215
+  },
+  {
+    "status": "ALL_EXPLORED",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": true,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [],
+    "final_offset_cm": {
+      "dx": -0.0,
+      "dy": 0.0
+    },
+    "run": 26,
+    "duration_sec": 6.009031534194946
+  },
+  {
+    "status": "GOAL_REACHED_RETURN_FAILED",
+    "found_red": true,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "23"
+    ],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "YELLOW",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 3.3,
+      "dy": -12.1
+    },
+    "run": 27,
+    "duration_sec": 47.02357268333435
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "YELLOW",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 0.0,
+      "dy": 6.0
+    },
+    "run": 28,
+    "duration_sec": 39.02099633216858
+  },
+  {
+    "status": "ALL_EXPLORED",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": true,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [],
+    "final_offset_cm": {
+      "dx": -0.0,
+      "dy": 0.0
+    },
+    "run": 29,
+    "duration_sec": 6.008094072341919
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "10"
+    ],
+    "colors": [
+      "RED"
+    ],
+    "final_offset_cm": {
+      "dx": 3.3,
+      "dy": -2.1
+    },
+    "run": 30,
+    "duration_sec": 14.010738849639893
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": -1.1,
+      "dy": 3.2
+    },
+    "run": 31,
+    "duration_sec": 33.01823425292969
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "8"
+    ],
+    "colors": [
+      "RED",
+      "YELLOW",
+      "MAGENTA",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 22.0,
+      "dy": 1.6
+    },
+    "run": 32,
+    "duration_sec": 47.02374863624573
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "43"
+    ],
+    "colors": [
+      "ORANGE",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": -5.8,
+      "dy": -0.3
+    },
+    "run": 33,
+    "duration_sec": 47.02574801445007
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "24"
+    ],
+    "colors": [
+      "ORANGE",
+      "YELLOW",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": -86.8,
+      "dy": 21.8
+    },
+    "run": 34,
+    "duration_sec": 48.02461767196655
+  },
+  {
+    "status": "GOAL_REACHED_RETURN_FAILED",
+    "found_red": true,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "48"
+    ],
+    "colors": [
+      "RED",
+      "YELLOW",
+      "MAGENTA",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": -0.6,
+      "dy": -13.4
+    },
+    "run": 35,
+    "duration_sec": 48.02570080757141
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED"
+    ],
+    "final_offset_cm": {
+      "dx": 2.2,
+      "dy": -0.2
+    },
+    "run": 36,
+    "duration_sec": 35.01935696601868
+  },
+  {
+    "status": "ALL_EXPLORED",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": true,
+    "timeout": false,
+    "aruco_ids": [
+      "21"
+    ],
+    "colors": [
+      "ORANGE",
+      "YELLOW",
+      "MAGENTA",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": -35.0,
+      "dy": 23.1
+    },
+    "run": 37,
+    "duration_sec": 40.02220392227173
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED"
+    ],
+    "final_offset_cm": {
+      "dx": 4.0,
+      "dy": -2.1
+    },
+    "run": 38,
+    "duration_sec": 8.007930278778076
+  },
+  {
+    "status": "ALL_EXPLORED",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": true,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [],
+    "final_offset_cm": {
+      "dx": -0.0,
+      "dy": 0.0
+    },
+    "run": 39,
+    "duration_sec": 6.007771015167236
+  },
+  {
+    "status": "ALL_EXPLORED",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": true,
+    "timeout": false,
+    "aruco_ids": [
+      "25"
+    ],
+    "colors": [
+      "ORANGE",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 36.4,
+      "dy": 21.7
+    },
+    "run": 40,
+    "duration_sec": 38.02094030380249
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": 3.2,
+      "dy": 2.1
+    },
+    "run": 41,
+    "duration_sec": 34.01751732826233
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": 1.2,
+      "dy": 0.0
+    },
+    "run": 42,
+    "duration_sec": 18.01408815383911
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "38"
+    ],
+    "colors": [
+      "RED",
+      "MAGENTA",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": -3.3,
+      "dy": 5.1
+    },
+    "run": 43,
+    "duration_sec": 32.01823019981384
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": 1.7,
+      "dy": 2.0
+    },
+    "run": 44,
+    "duration_sec": 12.01401948928833
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "35"
+    ],
+    "colors": [
+      "RED",
+      "ORANGE",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": -35.0,
+      "dy": 2.9
+    },
+    "run": 45,
+    "duration_sec": 38.020888566970825
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [],
+    "colors": [
+      "RED"
+    ],
+    "final_offset_cm": {
+      "dx": 5.2,
+      "dy": -0.0
+    },
+    "run": 46,
+    "duration_sec": 13.012043476104736
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "36"
+    ],
+    "colors": [
+      "RED",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": -0.4,
+      "dy": -2.1
+    },
+    "run": 47,
+    "duration_sec": 17.012905597686768
+  },
+  {
+    "status": "GOAL_REACHED_RETURN_FAILED",
+    "found_red": true,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "25"
+    ],
+    "colors": [
+      "YELLOW",
+      "CYAN",
+      "RED",
+      "ORANGE",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": -2.2,
+      "dy": 24.6
+    },
+    "run": 48,
+    "duration_sec": 46.024587631225586
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "30"
+    ],
+    "colors": [
+      "ORANGE",
+      "YELLOW",
+      "MAGENTA",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": 2.6,
+      "dy": -23.6
+    },
+    "run": 49,
+    "duration_sec": 46.025880098342896
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "aruco_ids": [
+      "26"
+    ],
+    "colors": [
+      "YELLOW",
+      "MAGENTA",
+      "CYAN"
+    ],
+    "final_offset_cm": {
+      "dx": -10.8,
+      "dy": 2.9
+    },
+    "run": 50,
+    "duration_sec": 46.02311897277832
+  }
+]

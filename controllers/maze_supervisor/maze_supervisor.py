@@ -1,20 +1,20 @@
 """
-Webots Sim2Real Maze Supervisor (ENU Z-Up Coordinate System)
-Dynamically generates a 5x5 DFS maze, randomizes materials,
-places tiles, obstacles (ramps, stairs, speedbumps), and chaotic lighting.
-Teleports the robot to the Start (Green) tile on launch.
+Controlador Supervisor del Laberinto Webots Sim2Real (Coordenadas ENU Z-Up)
+Genera dinámicamente un laberinto 5x5 aleatorio usando DFS (Recursive Backtracker),
+coloca los muros, baldosas de colores, obstáculos físicos (rampas, escalones, topes)
+e iluminación aleatoria, y sitúa al robot al inicio sobre la baldosa verde.
 """
 
 from controller import Supervisor
 import random
 import math
 
-# --- Constants ---
-GRID_SIZE = 5
-CELL_SIZE = 0.3
-WALL_HEIGHT = 0.15
-WALL_THICKNESS = 0.01
-HALF_CELL = CELL_SIZE / 2.0
+# --- Constantes de Geometría del Laberinto ---
+GRID_SIZE = 5               # Laberinto de 5x5 celdas
+CELL_SIZE = 0.3             # Cada celda mide 30 cm de lado
+WALL_HEIGHT = 0.15          # Altura de las paredes (15 cm)
+WALL_THICKNESS = 0.01       # Grosor de las paredes (1 cm)
+HALF_CELL = CELL_SIZE / 2.0 # Mitad de celda para calcular los centros (15 cm)
 MAZE_ORIGIN_X = -(GRID_SIZE * CELL_SIZE) / 2.0
 MAZE_ORIGIN_Y = -(GRID_SIZE * CELL_SIZE) / 2.0
 
@@ -300,6 +300,8 @@ class MazeSupervisor(Supervisor):
             f'geometry Box {{ size {size} }} '
             f'}} ] '
             f'name "aruco_marker" '
+            f'contactMaterial "Wall" '
+            f'boundingObject Box {{ size {size} }} '
             f'}}'
         )
         self.spawn_node(vrml)
@@ -508,10 +510,25 @@ class MazeSupervisor(Supervisor):
         print(f"Total nodes spawned: {self.node_counter}")
 
     def run(self):
+        import os
+        flag_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "finished.flag")
+        if os.path.exists(flag_file):
+            try:
+                os.remove(flag_file)
+            except Exception:
+                pass
+
         print("Supervisor Generating Environment...")
         self.generate_environment()
         while self.step(self.timeStep) != -1:
-            pass
+            if os.path.exists(flag_file):
+                print("[SUPERVISOR] Detected finished.flag. Quitting simulation cleanly.")
+                self.simulationQuit(0)
+                break
+            if self.getTime() > 240.0:
+                print("[SUPERVISOR] Max simulation time exceeded (240s). Quitting.")
+                self.simulationQuit(1)
+                break
 
 
 if __name__ == '__main__':

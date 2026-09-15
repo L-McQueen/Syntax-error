@@ -79,6 +79,7 @@ Robot {
         RotationalMotor {
           name "left wheel motor"
           maxVelocity 6.28
+          consumptionFactor 2.5
         }
         PositionSensor {
           name "left wheel sensor"
@@ -120,6 +121,7 @@ Robot {
         RotationalMotor {
           name "right wheel motor"
           maxVelocity 6.28
+          consumptionFactor 2.5
         }
         PositionSensor {
           name "right wheel sensor"
@@ -218,9 +220,10 @@ Robot {
       name "tof_front"
       lookupTable [
         0 0 0
-        1.5 1500 0
+        4.0 4000 0.015
       ]
       type "infra-red"
+      resolution 1
     }
     DistanceSensor {
       translation 0 0.05 0.05
@@ -238,9 +241,10 @@ Robot {
       name "tof_left"
       lookupTable [
         0 0 0
-        1.5 1500 0
+        2.0 2000 0.025
       ]
       type "infra-red"
+      resolution 1
     }
     DistanceSensor {
       translation 0 -0.05 0.05
@@ -258,9 +262,10 @@ Robot {
       name "tof_right"
       lookupTable [
         0 0 0
-        1.5 1500 0
+        2.0 2000 0.025
       ]
       type "infra-red"
+      resolution 1
     }
     Camera {
       translation 0.04 0 0.04
@@ -317,6 +322,8 @@ Robot {
     }
     InertialUnit {
       name "imu"
+      noise 0.007
+      resolution 0.001
     }
     Accelerometer {
       name "accelerometer"
@@ -324,8 +331,19 @@ Robot {
     Gyro {
       name "gyro"
     }
+    InertialUnit {
+      name "imu_ideal"
+    }
+    GPS {
+      name "gps"
+    }
+    Compass {
+      name "compass"
+    }
   ]
   name "Sim2RealRobot"
+  battery [ 25920 25920 0 ]
+  cpuConsumption 6.0
   boundingObject Box {
     size 0.08 0.08 0.03
   }

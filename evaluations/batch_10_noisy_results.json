@@ -1,0 +1,223 @@
+[
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 9.2,
+    "final_gyro_drift_deg": -8.0,
+    "aruco_ids": [
+      "34"
+    ],
+    "colors": [
+      "ORANGE",
+      "RED",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": -5.2,
+      "dy": -4.5
+    },
+    "run": 1,
+    "duration_sec": 31.801560640335083
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 7.2,
+    "final_gyro_drift_deg": 6.1,
+    "aruco_ids": [
+      "37"
+    ],
+    "colors": [
+      "ORANGE",
+      "CYAN",
+      "MAGENTA",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": -18.1,
+      "dy": 8.8
+    },
+    "run": 2,
+    "duration_sec": 31.499959707260132
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 15.4,
+    "final_gyro_drift_deg": -13.3,
+    "aruco_ids": [
+      "6"
+    ],
+    "colors": [
+      "ORANGE",
+      "CYAN",
+      "MAGENTA",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": 58.0,
+      "dy": -22.4
+    },
+    "run": 3,
+    "duration_sec": 40.548885107040405
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 7.2,
+    "final_gyro_drift_deg": 6.4,
+    "aruco_ids": [],
+    "colors": [
+      "ORANGE",
+      "RED",
+      "MAGENTA",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": -6.7,
+      "dy": -0.6
+    },
+    "run": 4,
+    "duration_sec": 22.546906232833862
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 9.6,
+    "final_gyro_drift_deg": 7.6,
+    "aruco_ids": [],
+    "colors": [
+      "ORANGE",
+      "CYAN",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": 22.6,
+      "dy": 6.3
+    },
+    "run": 5,
+    "duration_sec": 31.5075204372406
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 4.1,
+    "final_gyro_drift_deg": -1.7,
+    "aruco_ids": [
+      "31",
+      "17"
+    ],
+    "colors": [
+      "ORANGE"
+    ],
+    "final_offset_cm": {
+      "dx": 90.5,
+      "dy": 2.7
+    },
+    "run": 6,
+    "duration_sec": 36.068063497543335
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 12.3,
+    "final_gyro_drift_deg": 11.5,
+    "aruco_ids": [
+      "4"
+    ],
+    "colors": [
+      "YELLOW",
+      "ORANGE",
+      "MAGENTA",
+      "CYAN",
+      "RED"
+    ],
+    "final_offset_cm": {
+      "dx": 24.7,
+      "dy": -22.1
+    },
+    "run": 7,
+    "duration_sec": 31.570882320404053
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 4.6,
+    "final_gyro_drift_deg": -3.5,
+    "aruco_ids": [],
+    "colors": [
+      "RED",
+      "CYAN",
+      "MAGENTA"
+    ],
+    "final_offset_cm": {
+      "dx": 0.6,
+      "dy": 0.8
+    },
+    "run": 8,
+    "duration_sec": 20.266592741012573
+  },
+  {
+    "status": "SUCCESS_RETURNED_HOME",
+    "found_red": true,
+    "returned_home": true,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 3.8,
+    "final_gyro_drift_deg": -1.5,
+    "aruco_ids": [],
+    "colors": [
+      "RED"
+    ],
+    "final_offset_cm": {
+      "dx": 1.6,
+      "dy": -3.1
+    },
+    "run": 9,
+    "duration_sec": 15.70931601524353
+  },
+  {
+    "status": "INCOMPLETE",
+    "found_red": false,
+    "returned_home": false,
+    "all_explored": false,
+    "timeout": false,
+    "max_gyro_drift_deg": 3.4,
+    "final_gyro_drift_deg": 1.9,
+    "aruco_ids": [],
+    "colors": [
+      "MAGENTA",
+      "YELLOW"
+    ],
+    "final_offset_cm": {
+      "dx": -7.2,
+      "dy": -4.0
+    },
+    "run": 10,
+    "duration_sec": 31.539260625839233
+  }
+]

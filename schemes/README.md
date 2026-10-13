@@ -75,10 +75,16 @@ La comunicación entre la Orange Pi Zero 2W y el Arduino Uno es **estrictamente 
 
 ### Justificación de Conexión Directa sin Convertidor de Nivel:
 El microcontrolador ATmega328P del Arduino Uno trabaja a $V_{CC} = 5.0\text{ V}$. De acuerdo con su hoja de datos oficial:
-$$\text{Umbral Mínimo de Entrada ALTA } (V_{IH}) = 0.6 \times V_{CC} = 0.6 \times 5.0\text{ V} = 3.0\text{ V}$$
+
+$$
+\text{Umbral Mínimo de Entrada ALTA } (V_{IH}) = 0.6 \times V_{CC} = 0.6 \times 5.0\text{ V} = 3.0\text{ V}
+$$
 
 Dado que el pin `TX` de la Orange Pi Zero 2W emite una señal de $V_{OH} = 3.3\text{ V}$, se cumple con holgura:
-$$3.3\text{ V} > 3.0\text{ V}$$
+
+$$
+3.3\text{ V} > 3.0\text{ V}
+$$
 
 Por lo tanto:
 * La señal de 3.3V es interpretada como un nivel `HIGH` lógico estable y libre de fluctuaciones.

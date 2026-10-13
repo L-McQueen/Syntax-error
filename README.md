@@ -147,8 +147,13 @@ pitch = 0.96 * (pitch + gx_corr * dt) + 0.04 * pitch_acc
 
 ### B. Centrado Lateral PID en Laberinto
 En pasillos de 30 cm, el error de centrado $e(t) = d_{\text{izq}} - d_{\text{der}}$ modula la velocidad de las ruedas:
-$$PWM_{\text{izq}} = PWM_{\text{base}} - (K_p \cdot e(t) + K_d \cdot \dot{e}(t))$$
-$$PWM_{\text{der}} = PWM_{\text{base}} + (K_p \cdot e(t) + K_d \cdot \dot{e}(t))$$
+
+$$
+\begin{aligned}
+PWM_{\text{izq}} &= PWM_{\text{base}} - (K_p \cdot e(t) + K_d \cdot \dot{e}(t)) \\
+PWM_{\text{der}} &= PWM_{\text{base}} + (K_p \cdot e(t) + K_d \cdot \dot{e}(t))
+\end{aligned}
+$$
 
 ### C. Failsafe Hardware (Watchdog de 300 ms en Arduino)
 Si el software en Linux se bloquea o el cable serial sufre desconexión, el microcontrolador corta la energía a los motores en **menos de 300 ms**, evitando colisiones mecánicas accidentales.

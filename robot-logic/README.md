@@ -35,21 +35,47 @@ El sensor inercial **MPU-6050** está orientado físicamente con su **eje Y coin
 
 ### A. Guiñada Horizontal (Yaw en Eje Z)
 Para el seguimiento de rumbo en giros de 90° exactos dentro del laberinto:
-1. **Calibración de Sesgo (*Bias*):** Al encender el robot, durante los primeros 2.0 segundos de reposo se promedian 100 muestras de velocidad angular en Z para obtener el error estático $b_z$.
-2. **Filtro de Zona Muerta (*Deadband*):** Para evitar que el ruido térmico acumule deriva durante tramos rectos:
-   $$\omega_{z,\text{filtrado}} = \begin{cases} 0 & \text{si } |\omega_z - b_z| < 0.25^\circ/\text{s} \\ \omega_z - b_z & \text{en otro caso} \end{cases}$$
-3. **Integración Trapezoidal:** A una frecuencia estricta de $f = 50\text{ Hz}$ ($\Delta t = 0.02\text{ s}$):
-   $$\theta_{\text{yaw}}(k) = \theta_{\text{yaw}}(k-1) + \omega_{z,\text{filtrado}} \cdot \Delta t$$
+
+1. **Calibración de Sesgo (*Bias*):**  
+   Al encender el robot, durante los primeros 2.0 segundos de reposo se promedian 100 muestras de velocidad angular en $Z$ para obtener el error estático $b_z$.
+
+2. **Filtro de Zona Muerta (*Deadband*):**  
+   Para evitar que el ruido térmico acumule deriva durante tramos rectos, la velocidad angular se filtra según:
+
+$$
+\omega_{z,\text{filtrado}} = 
+\begin{cases} 
+0 & \text{si } |\omega_z - b_z| < 0.25^\circ/\text{s} \\ 
+\omega_z - b_z & \text{en otro caso} 
+\end{cases}
+$$
+
+3. **Integración Trapezoidal:**  
+   A una frecuencia estricta de $f = 50\text{ Hz}$ ($\Delta t = 0.02\text{ s}$), el ángulo de rumbo acumulado se calcula mediante:
+
+$$
+\theta_{\text{yaw}}(k) = \theta_{\text{yaw}}(k-1) + \omega_{z,\text{filtrado}} \cdot \Delta t
+$$
 
 ---
 
 ### B. Cabeceo Longitudinal (Pitch en Eje Y) y Detección de Rampas
 Para detectar rampas ascendentes y descendentes en la Pista B sin necesidad de sensores mecánicos de contacto:
 
-1. **Estimación por Acelerómetro:**
-   $$\theta_{\text{acc}} = \text{atan2}(A_y, \sqrt{A_x^2 + A_z^2}) \cdot \left(\frac{180}{\pi}\right)$$
-2. **Filtro Complementario:** Combina la respuesta instantánea del giróscopo en X con la estabilidad a largo plazo del acelerómetro:
-   $$\theta_{\text{pitch}}(k) = 0.96 \cdot (\theta_{\text{pitch}}(k-1) + \omega_x \cdot \Delta t) + 0.04 \cdot \theta_{\text{acc}}$$
+1. **Estimación por Acelerómetro:**  
+   El ángulo de inclinación a partir de las componentes acelerométricas se obtiene con:
+
+$$
+\theta_{\text{acc}} = \text{atan2}\left(A_y, \sqrt{A_x^2 + A_z^2}\right) \cdot \left(\frac{180}{\pi}\right)
+$$
+
+2. **Filtro Complementario:**  
+   Combina la respuesta instantánea del giróscopo en $X$ con la estabilidad a largo plazo del acelerómetro:
+
+$$
+\theta_{\text{pitch}}(k) = 0.96 \cdot (\theta_{\text{pitch}}(k-1) + \omega_x \cdot \Delta t) + 0.04 \cdot \theta_{\text{acc}}
+$$
+
 3. **Clasificador Dinámico de Terreno:**
    * $\theta_{\text{pitch}} > +6.0^\circ \implies$ **SUBIDA** (robot ascendiendo rampa).
    * $\theta_{\text{pitch}} < -6.0^\circ \implies$ **BAJADA** (robot descendiendo rampa).
@@ -71,13 +97,24 @@ En la Pista A (Laberinto), el robot debe avanzar a través de celdas de $30\text
 ```
 
 ### Ecuación de Control Proporcional-Derivativo:
-$$e(t) = d_{\text{izq}}(t) - d_{\text{der}}(t)$$
 
-$$u(t) = K_p \cdot e(t) + K_d \cdot \frac{e(t) - e(t - \Delta t)}{\Delta t}$$
+$$
+e(t) = d_{\text{izq}}(t) - d_{\text{der}}(t)
+$$
+
+$$
+u(t) = K_p \cdot e(t) + K_d \cdot \frac{e(t) - e(t - \Delta t)}{\Delta t}
+$$
 
 * **Comando a Motores:**
-  $$PWM_{\text{izq}} = PWM_{\text{base}} - u(t)$$
-  $$PWM_{\text{der}} = PWM_{\text{base}} + u(t)$$
+
+$$
+\begin{aligned}
+PWM_{\text{izq}} &= PWM_{\text{base}} - u(t) \\
+PWM_{\text{der}} &= PWM_{\text{base}} + u(t)
+\end{aligned}
+$$
+
 * **Parámetros Sintonizados:**
   - $PWM_{\text{base}} = 160$ (equivalente a $4.2\text{ rad/s}$ en ruedas a 7.8V).
   - $K_p = 1.45$: Corrección proporcional rápida ante desvíos.
@@ -91,12 +128,23 @@ $$u(t) = K_p \cdot e(t) + K_d \cdot \frac{e(t) - e(t - \Delta t)}{\Delta t}$$
 Debido a que el chasis opera sin encoders de rueda físicos, se implementó un modelo de odometría redundante basado en la curva lineal del motor N20 alimentado a tensión fija estabilizada:
 
 1. **Relación Tensión-Velocidad:**
-   $$\text{RPM}_{7.8\text{V}} = 260.0 \times \left(\frac{7.8\text{ V}}{6.0\text{ V}}\right) = 338.0\text{ RPM}$$
-   $$\omega_{\text{max}} = 338.0 \times \frac{2\pi}{60} = 35.39\text{ rad/s}$$
-2. **Velocidad Lineal de Crucero ($R = 0.02\text{ m}$):**
+
+$$
+\text{RPM}_{7.8\text{V}} = 260.0 \times \left(\frac{7.8\text{ V}}{6.0\text{ V}}\right) = 338.0\text{ RPM}
+$$
+
+$$
+\omega_{\text{max}} = 338.0 \times \frac{2\pi}{60} = 35.39\text{ rad/s}
+$$
+
+2. **Velocidad Lineal de Crucero ($R = 0.02\text{ m}$):**  
    Comandando a $\omega_{\text{crucero}} = 4.2\text{ rad/s}$:
-   $$v_{\text{lin}} = \omega_{\text{crucero}} \times R = 4.2 \times 0.02 = 0.084\text{ m/s} \quad (8.4\text{ cm/s})$$
-3. **Corrección Óptica por ToF Frontal:**
+
+$$
+v_{\text{lin}} = \omega_{\text{crucero}} \times R = 4.2 \times 0.02 = 0.084\text{ m/s} \quad (8.4\text{ cm/s})
+$$
+
+3. **Corrección Óptica por ToF Frontal:**  
    El avance por casilla de 30 cm se programa por temporización ($T_{\text{celda}} = 0.30 / 0.084 = 3.57\text{ s}$), pero cada vez que el sensor frontal VL53L1X detecta una pared transversal a menos de 40 cm, **reemplaza la estimación temporal por la distancia milimétrica absoluta**, reseteando cualquier error acumulado de patinaje de rueda.
 
 ---

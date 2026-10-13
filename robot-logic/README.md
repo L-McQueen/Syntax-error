@@ -60,10 +60,10 @@ $$
 ---
 
 ### B. Cabeceo Longitudinal (Pitch en Eje Y) y Detección de Rampas
-Para detectar rampas ascendentes y descendentes en la Pista B sin necesidad de sensores mecánicos de contacto:
+Para detectar rampas ascendentes y contar correctamente las casillas:
 
 1. **Estimación por Acelerómetro:**  
-   El ángulo de inclinación a partir de las componentes acelerométricas se obtiene con:
+   El ángulo de inclinación a partir de las componentes de la aceleracion se obtiene con:
 
 $$
 \theta_{\text{acc}} = \text{atan2}\left(A_y, \sqrt{A_x^2 + A_z^2}\right) \cdot \left(\frac{180}{\pi}\right)

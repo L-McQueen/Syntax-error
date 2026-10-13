@@ -1,6 +1,6 @@
 <div align="center">
   <h1>🤖 Enigma Seteki | Candidates 2026</h1>
-  <p><strong>Robot móvil autónomo con arquitectura distribuida (Orange Pi Zero 2W + Arduino Uno R3), gemelo digital Sim2Real en Webots, navegación inercial con filtro complementario, visión híbrida y telemetría OLED en pits.</strong></p>
+  <p><strong>tengo mucho sueño ^o^^o^^o^, ✍️(◔◡◔), sudo poweroff</strong></p>
   
   <!-- Animated Typing SVG Header -->
   <a href="https://github.com/L-McQueen/Syntax-error">

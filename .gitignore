@@ -1,3 +1,8 @@
+# Documentación privada y bitácoras (exclusivo local / asistente)
+docs/
+bitacoras/
+bitacora*.md
+
 # IDEs y configuración local
 .vscode/
 .agents/

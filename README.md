@@ -1,6 +1,6 @@
 <div align="center">
   <h1>🤖 Enigma Seteki | Candidates 2026</h1>
-  <p><strong>tengo mucho sueño ^o^^o^^o^, ✍️(◔◡◔), sudo poweroff</strong></p>
+  <p><strong> </strong></p>
   
   <!-- Animated Typing SVG Header -->
   <a href="https://github.com/L-McQueen/Syntax-error">

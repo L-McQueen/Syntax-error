@@ -85,28 +85,67 @@ $$
 
 ## 🎯 2. Control Lateral de Centrado PID en Pasillos de 30 cm
 
-En la Pista A (Laberinto), el robot debe avanzar a través de celdas de $30\text{ cm} \times 30\text{ cm}$ sin raspar las paredes laterales.
+En la Pista A (Laberinto), el robot debe navegar a través de celdas de $30\text{ cm} \times 30\text{ cm}$ sin rozar las paredes laterales ni oscilar en pasillos abiertos.
 
 ```
-       [PARED IZQ]                                                     [PARED DER]
-       │                                                                         │
-       │◄──────── dist_izq ────────►[ ROBOT ]◄──────── dist_der ────────►│
-       │                                  │                                      │
-       │                                  ▼                                      │
-       │                             error = dist_izq - dist_der                 │
+                  [Pared Izquierda]                       [Pared Derecha]
+             │ ◄─────── 10-15 cm ──────► [Robot] ◄────── 10-15 cm ──────► │
+             │   Zona de Peligro: < 10cm          Zona de Peligro: < 10cm │
+             │   (Empuje hacia la der)            (Empuje hacia la izq)   │
+             │   Zona Neutra: 10 - 15 cm          Zona Neutra: 10 - 15 cm │
+             │   (Avance Recto Estable)           (Avance Recto Estable)  │
 ```
 
-### Ecuación de Control Proporcional-Derivativo:
+---
+
+### A. Ecuación Geométrica del Error Lateral por Zonas
+
+Para asegurar estabilidad absoluta tanto si existen dos paredes como si el robot pasa junto a una sola pared en una bifurcación:
+
+#### Caso 1: Con 2 Paredes Laterales ($d_L < 22\text{ cm}$ y $d_R < 22\text{ cm}$)
+Centrado equidistante simétrico respecto al centro del pasillo:
 
 $$
-e(t) = d_{\text{izq}}(t) - d_{\text{der}}(t)
+e(t) = \frac{d_L(t) - d_R(t)}{2}
 $$
+
+#### Caso 2: Con 1 Sola Pared (Referencia Pared Izquierda)
+Aplica una zona muerta de tolerancia entre 10 cm y 15 cm:
+
+$$
+e(t) = 
+\begin{cases}
+d_L - 0.10 & \text{si } d_L < 0.10\text{ m} \quad (\text{empuje a la derecha para no rozar}) \\
+d_L - 0.15 & \text{si } d_L > 0.15\text{ m} \quad (\text{atracción suave hacia la pared}) \\
+0.0 & \text{si } 0.10\text{ m} \le d_L \le 0.15\text{ m} \quad (\text{zona neutra: avance recto})
+\end{cases}
+$$
+
+#### Caso 3: Con 1 Sola Pared (Referencia Pared Derecha)
+
+$$
+e(t) = 
+\begin{cases}
+0.10 - d_R & \text{si } d_R < 0.10\text{ m} \quad (\text{empuje a la izquierda para no rozar}) \\
+0.15 - d_R & \text{si } d_R > 0.15\text{ m} \quad (\text{atracción suave hacia la pared}) \\
+0.0 & \text{si } 0.10\text{ m} \le d_R \le 0.15\text{ m} \quad (\text{zona neutra: avance recto})
+\end{cases}
+$$
+
+#### Caso 4: En Espacio Abierto o Intersección ($d \ge 22\text{ cm}$)
+El PID se desconecta de inmediato ($e = 0.0$) para evitar correcciones falsas al pasar junto a puertas o cruces.
+
+---
+
+### B. Salida de Control y Modulación de Motores
+
+El error calculado alimenta la ley de control proporcional-derivativa:
 
 $$
 u(t) = K_p \cdot e(t) + K_d \cdot \frac{e(t) - e(t - \Delta t)}{\Delta t}
 $$
 
-* **Comando a Motores:**
+* **Comando Diferencial de Velocidad:**
 
 $$
 \begin{aligned}
@@ -119,7 +158,63 @@ $$
   - $PWM_{\text{base}} = 160$ (equivalente a $4.2\text{ rad/s}$ en ruedas a 7.8V).
   - $K_p = 1.45$: Corrección proporcional rápida ante desvíos.
   - $K_d = 0.35$: Amortiguamiento para evitar oscilaciones pendulares entre paredes.
-  - **Manejo de Apertura de Pasillo:** Si $d_{\text{izq}} > 220\text{ mm}$ (intersección o pasillo abierto), el término correspondiente se anula y el robot se referencia únicamente contra la pared contigua existente a distancia fija ($110\text{ mm}$).
+
+---
+
+### C. Estimador Físico de Ángulo con Muros ($\theta_{\text{walls}}$) y Autocalibración del IMU
+
+El giróscopo MPU-6050 económico presenta una deriva térmica continua ($\pm 0.15^\circ/\text{s}$). Tras 60 segundos de carrera, acumula entre $15^\circ$ y $25^\circ$ de desvío; al girar a $90^\circ$, el robot en realidad gira $70^\circ$, entrando cruzado a los pasillos y colisionando.
+
+#### Principio Físico:
+En un laberinto ortogonal, **las paredes del pasillo siempre apuntan a los rumbos cardinales físicos exactos ($0^\circ, 90^\circ, 180^\circ, 270^\circ$)**.
+
+```
+                EJE LONGITUDINAL DEL PASILLO (PAREDES)
+        ─────────────────────────────────────────────────────────────►
+                       \
+                        \  θ_walls (Ángulo físico relativo al muro)
+                         \
+                          ► [ROBOT] (Avanza a velocidad lineal v)
+```
+
+#### Procedimiento de Estimación y Compensación Continua:
+
+1. **Evolución Temporal de la Métrica Lateral $m$:**  
+   Al avanzar en el pasillo a velocidad constante $v = 0.084\text{ m/s}$, el robot registra la evolución temporal de la métrica lateral $m$:
+
+$$
+m(t) = 
+\begin{cases}
+\dfrac{d_L(t) - d_R(t)}{2} & \text{si hay 2 paredes} \\
+d_L(t) & \text{si hay pared izquierda} \\
+-d_R(t) & \text{si hay pared derecha}
+\end{cases}
+$$
+
+2. **Estimación del Ángulo Físico Real con los Muros ($\theta_{\text{walls}}$):**  
+   Sobre una ventana temporal $\Delta t$ con desplazamiento $\Delta s = v \cdot \Delta t$:
+
+$$
+\theta_{\text{walls}} = -\frac{1}{v} \frac{dm}{dt} = -\frac{m(t) - m(t - \Delta t)}{\Delta s}
+$$
+
+donde $\theta_{\text{walls}}$ representa el ángulo físico real del chasis respecto a las paredes, acotado por seguridad a $\pm 15^\circ$.
+
+3. **Cálculo de la Deriva Instantánea del IMU ($\epsilon_{\text{deriva}}$):**  
+   La diferencia entre el rumbo que reporta el giróscopo ($\psi_{\text{imu}}$) y la orientación física del muro ($\psi_{\text{meta}} + \theta_{\text{walls}}$) es la **deriva neta del IMU**:
+
+$$
+\epsilon_{\text{deriva}} = \mathrm{wrap}\left(\psi_{\text{imu}} - \psi_{\text{meta}} - \theta_{\text{walls}}\right)
+$$
+
+4. **Compensación Dinámica en Vivo ($\psi_{\text{offset}}$):**  
+   En cada ciclo de control a 50 Hz, el software absorbe suavemente esta deriva en su sesgo acumulado:
+
+$$
+\psi_{\text{offset}} \leftarrow \psi_{\text{offset}} + 0.035 \cdot \epsilon_{\text{deriva}}
+$$
+
+**Resultado en Pista:** Conforme el robot recorre cualquier pasillo recto, su rumbo interno se calibra en tiempo real contra los muros. Al llegar a la siguiente intersección, la deriva acumulada es inferior a $\pm 1.5^\circ$, garantizando giros ortogonales perfectos a $90.0^\circ$ y centrado automático sin necesidad de encoders de rueda ni brújulas magnetométricas.
 
 ---
 

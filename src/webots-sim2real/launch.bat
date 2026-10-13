@@ -1,5 +1,5 @@
 @echo off
-cd /d "c:\Users\Sin nombre\Documents\Candidates\WebotsSim2Real"
+cd /d "%~dp0"
 set HEADLESS=1
 set PYTHONUNBUFFERED=1
 set WORLD=worlds/sim2real_maze.wbt

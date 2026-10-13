@@ -400,7 +400,7 @@ El reglamento premia con **35 puntos** si el robot regresa desde la meta hasta l
 
 ## 📊 Validación Experimental: 100% de Éxito en Pruebas
 
-Para garantizar que el sistema no dependa de la "suerte" en una sola corrida, ejecutamos una batería automatizada de **5 pruebas consecutivas** en Webots ([scripts/batch_test_runs.py](file:///C:/Users/Sin%20nombre/Documents/Candidates/WebotsSim2Real/scripts/batch_test_runs.py)) con todas las fuentes de ruido activas:
+Para garantizar que el sistema no dependa de la "suerte" en una sola corrida, ejecutamos una batería automatizada de **5 pruebas consecutivas** en Webots ([scripts/batch_test_runs.py](file:///c:/Users/Sin%20nombre/Documents/Candidates/src/webots-sim2real/scripts/batch_test_runs.py)) con todas las fuentes de ruido activas:
 
 | Corrida | Resultado | Meta Roja | Retorno (0,0) | Desviación Final $(dX, dY)$ | Deriva Máxima IMU | Frenadas Emergencia | Duración |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -424,7 +424,7 @@ Para garantizar que el sistema no dependa de la "suerte" en una sola corrida, ej
 ## 📁 Estructura del Repositorio
 
 ```bash
-WebotsSim2Real/
+src/webots-sim2real/
 ├── controllers/
 │   ├── maze_supervisor/
 │   │   └── maze_supervisor.py      # Generador procedimental de laberintos, rampas y ArUco (Pista A)

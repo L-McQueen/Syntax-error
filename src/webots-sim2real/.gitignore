@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Simulation artifacts, temporary files & logs
+*.log
+*.flag
+*.bak
+*.tmp
+simulation_log.txt
+target_world.txt
+track_b_config.json
+
+# Evaluaciones y scripts de análisis batch
+evaluations/
+scripts/
+
+# Modelado 3D pesado y mallas CAD
+*.obj
+*.step
+*.stp
+*.stl
+worlds/meshes/
+
+# Bitácoras y hardware KiCad
+bitacoras/
+bitacora*.md
+Esquematico/
+esquematico/
+*.kicad_*
+cad/
+CAD/
+fusion360/
+fusion_scripts/
+cad_scripts/
+*.f3d
+*.f3z
+
+# Virtual environments
+.venv/
+venv/
+ENV/

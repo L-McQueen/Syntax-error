@@ -1,0 +1,30 @@
+# IDEs y configuración local
+.vscode/
+.agents/
+*.code-workspace
+
+# Python y compilados
+__pycache__/
+*.py[cod]
+*.pyc
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Logs y temporales de simulación
+*.log
+*.flag
+*.bak
+*.tmp
+simulation_log.txt
+target_world.txt
+track_b_config.json
+
+# Archivos temporales de CAD / EDA
+*.f3d
+*.f3z
+*.kicad_prl
+
+# Permitir el ensamble CAD maestro
+!3D-models/ensamble.step

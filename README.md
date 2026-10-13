@@ -1,8 +1,7 @@
 <div align="center">
-  <h1>🤖 3nIgMa S3t3ki | Candidates 2026</h1>
+  <h1>🤖 Enigma Seteki | Candidates 2026</h1>
   <p><strong>Robot móvil autónomo con arquitectura distribuida (Orange Pi Zero 2W + Arduino Uno R3), gemelo digital Sim2Real en Webots, navegación inercial con filtro complementario, visión híbrida y telemetría OLED en pits.</strong></p>
-  <p><i>Ingeniería mecatrónica aplicada, control en tiempo real estricto y cero cables en pista.</i></p>
-
+  
   <!-- Animated Typing SVG Header -->
   <a href="https://github.com/L-McQueen/Syntax-error">
     <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=20&pause=1000&color=38BDF8&center=true&vCenter=true&width=550&lines=3nIgMa+S3t3ki+%7C+Candidates+2026;Arquitectura+Distribuida+SBC+%2B+MCU;Gemelo+Digital+Sim2Real+en+Webots;Filtro+Complementario+Inercial;Control+Lateral+PID+en+Pasillos;Cero+Cables+en+Pista" alt="Typing SVG" />

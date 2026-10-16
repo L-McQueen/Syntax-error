@@ -22,7 +22,7 @@ ADDR_RIGHT = 0x31  # VL53L0X reasignado
 
 # Pines físicos XSHUT en gpiochip0
 GPIO_CHIP = "/dev/gpiochip0"
-PIN_XSHUT_FRONT = 228  # Pin 16 (PH4) - Cable Gris
+PIN_XSHUT_FRONT = 228  # Pin 18 (PH4) - Cable Gris
 PIN_XSHUT_LEFT = 256   # Pin 29 (PI0) - Cable Verde
 PIN_XSHUT_RIGHT = 271  # Pin 31 (PI15) - Cable Azul
 

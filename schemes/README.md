@@ -106,7 +106,7 @@ sequenceDiagram
 ```
 
 ### Pines GPIO Asignados para XSHUT:
-* **XSHUT Frontal (VL53L1X):** Pin 16 (`PH4`)
+* **XSHUT Frontal (VL53L1X):** Pin 18 (`PH4`)
 * **XSHUT Lateral Izquierdo:** Pin 29 (`PI0`)
 * **XSHUT Lateral Derecho:** Pin 31 (`PI15`)
 

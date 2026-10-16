@@ -106,3 +106,13 @@
 * **Regulador LM2596 #1 (Potencia Motores):** Calibrado a $7.8\text{ V}$ continuos con condensador de filtro de bajo ESR. Alimenta exclusivamente el DRV8833.
 * **Regulador LM2596 #2 (Lógica Limpia):** Calibrado a $5.0\text{ V}$ para la Orange Pi Zero 2W y el ESP32-C3-Zero (pin 5V).
 * **Aislamiento Galvánico:** Esta separación física impide que los picos inductivos de los motores generen caídas momentáneas de voltaje (*voltage sags*), previniendo reinicios repentinos (*brownouts*) en el procesador.
+
+---
+
+## 📷 8. Cámara de Visión Artificial Inteligente: Pixy2 (PixyCam v2)
+
+* **Documentación Completa:** Consulta la ficha técnica detallada, cableado SPI y protocolo binario en [components/pixy2.md](pixy2.md).
+* **Procesador de Visión Propio:** Doble núcleo NXP LPC4330 a 204 MHz; procesa la imagen a 60 FPS sin cargar la CPU de la Orange Pi.
+* **Interfaz Principal en Robot:** Bus SPI `/dev/spidev1.0` a 2 MHz (Pines 19, 21, 23, 24).
+* **Funciones Clave:** Detección instantánea de colores (puertas y balizas), seguimiento de líneas de pista y lectura de códigos de barras en el suelo.
+* **Lámpara Integrada:** LED blanco de alta potencia para iluminar pasillos oscuros del laberinto bajo comando por software.

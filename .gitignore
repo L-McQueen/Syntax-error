@@ -4,6 +4,17 @@ bitacoras/
 bitacora*.md
 notas_carrera.md
 notas_*.md
+reglamento*.md
+reglamento*.pdf
+*.pdf
+OrangePi_Zero2w_H618_User Manual_v1.3.pdf
+
+# Archivos temporales y del sistema
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store
+*.swp
+*~
 
 # IDEs y configuración local
 .vscode/
@@ -18,6 +29,12 @@ __pycache__/
 .venv/
 venv/
 ENV/
+
+# Variables de entorno y credenciales privadas
+.env
+.env.*
+*.key
+credentials.json
 
 # Logs y temporales de simulación
 *.log

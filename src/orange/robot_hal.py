@@ -35,7 +35,7 @@ CAMERA_DEVICE_INDEX = 1     # /dev/video1 (Cámara USB)
 
 # Pines XSHUT en gpiochip0
 GPIO_CHIP_NAME = "/dev/gpiochip0"
-PIN_XSHUT_FRONT = 228       # PH4 (Pin 16)
+PIN_XSHUT_FRONT = 228       # PH4 (Pin 18)
 PIN_XSHUT_LEFT  = 256       # PI0 (Pin 29)
 PIN_XSHUT_RIGHT = 271       # PI15 (Pin 31)
 

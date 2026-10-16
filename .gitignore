@@ -2,6 +2,8 @@
 docs/
 bitacoras/
 bitacora*.md
+notas_carrera.md
+notas_*.md
 
 # IDEs y configuración local
 .vscode/

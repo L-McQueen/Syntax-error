@@ -43,11 +43,11 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
                          │                               │
                          │               ┌───────────────┴───────────────┐
                          │               ▼                               ▼
-                         │        Arduino Uno R3 ◄───UART (TX-RX)──── Orange Pi Zero 2W
+                         │        ESP32-C3-Zero  ◄───UART (TX-RX)──── Orange Pi Zero 2W
                          │       (PWM Exclusivo)   (3.3V Directo) (Cerebro Linux / Sensores)
                          │               │                               │
                          ▼               │                               │
-                   Driver DRV8833 ◄──────┘ (Pines PWM)                   │
+                   Driver DRV8833 ◄──────┘ (GPIO 0, 1, 2, 3)             │
                    (Dual H-Bridge)                                       │
                          │                                               │
                          ▼                                               ▼
@@ -67,11 +67,11 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
 
 1. **Aislamiento Eléctrico con Doble Línea de Alimentación:**
    * **Línea de Potencia (7.8V fijos):** Alimentada por un convertidor reductor **LM2596 Step-Down a 7.8V** que va **exclusivamente al driver DRV8833 y los motores N20**. Esto aísla por completo el ruido electromagnético, los picos inductivos y las caídas momentáneas de tensión (*voltage sags*) provocadas por los motores, evitando reinicios repentinos (*brownouts*) en la electrónica de control.
-   * **Línea de Lógica (5V estables):** Una línea independiente de $5\text{ V}$ alimenta la **Orange Pi Zero 2W** y el **Arduino Uno R3**, asegurando que ambos cerebros trabajen con rizado mínimo y alimentación limpia.
+   * **Línea de Lógica (5V estables):** Una línea independiente de $5\text{ V}$ alimenta la **Orange Pi Zero 2W** y el **ESP32-C3-Zero** (vía su pin 5V con LDO interno a 3.3V), asegurando que ambos cerebros trabajen con rizado mínimo y alimentación limpia.
 
 2. **Cerebro Superior y toma de deciciones: Orange Pi Zero 2W**
    * Corre Linux embebido y **concentra todos los sensores y periféricos directamente**:
-     - **Canal UART (`/dev/ttyS1` o `/dev/ttyUSB0`):** Comunicación serial unidireccional hacia el Arduino Uno a 115200 baudios, transmitiendo paquetes livianos de velocidad (`[v_left, v_right]`).
+     - **Canal UART (`/dev/ttyS5`):** Comunicación serial unidireccional hacia el ESP32-C3-Zero a 115200 baudios, transmitiendo paquetes livianos de velocidad (`M,vel_izq,vel_der,servo\n`).
      - **Bus I2C nativo:** Lee en tiempo real el giróscopo/acelerómetro **GY-521 (MPU-6050)**, los 3 sensores láser ToF (**VL53L1X** frontal y **VL53L0X** laterales) y comanda la **Pantalla LCD**.
      - **Bus SPI:** Comunica a alta velocidad con la cámara **Pixy / PixyMon**, transmitiendo los bloques de color detectados con latencia despreciable.
      - **Puerto USB:** Conecta la **Webcam USB** para lectura y decodificación de marcadores ArUco con OpenCV.
@@ -88,10 +88,10 @@ El robot está pensado con una **arquitectura distribuida de procesamiento jerá
    * **Webcam USB:** Apuntando al frente para reconocer marcadores **ArUco (DICT_4X4_50)** adheridos en las paredes de los pasillos mediante OpenCV.
    * **Pixy / PixyMon (SPI):** Cámara de visión por hardware dedicada para clasificar el color del suelo en picada. Al conectarse por SPI y procesar la segmentación cromática en su propio procesador interno, entrega las coordenadas y firmas de color al instante, liberando por completo a la CPU de la Orange Pi de procesar flujos de video pesados para el suelo.
 
-5. **Cerebro de Bajo Nivel: Arduino Uno R3 (Exclusivo para Motores)**
-   * **Comunicación UART Unidireccional (Simplex) sin convertidor de nivel:** Conexión directa desde el pin **TX de la Orange Pi (3.3V)** hacia el pin **RX del Arduino Uno (Pin 0)**. Como la comunicación es exclusivamente en sentido SBC $\rightarrow$ Arduino (el Arduino solo recibe comandos de velocidad y no necesita responder), **no se requiere convertidor de nivel lógico**: el microcontrolador ATmega328P alimentado a 5V tiene un umbral de voltaje lógico alto $V_{IH} = 0.6 \cdot V_{CC} = 3.0\text{ V}$, por lo que los $3.3\text{ V}$ emitidos por la Orange Pi son reconocidos perfectamente y de forma segura como nivel ALTO (`HIGH`) estable, sin riesgo de sobretensión para la SBC ni componentes extra innecesarios.
-   * **Al Arduino SOLAMENTE se conectan los motores** a través del driver DRV8833.
-   * *¿Por qué separar el control de motores en el Arduino?* Los sistemas operativos como Linux no son de tiempo real estricto (*hard real-time*); generar PWM directamente desde los pines de una SBC puede presentar micro-jitter e inconsistencias cuando la CPU se satura procesando visión. El Arduino Uno se encarga al $100\%$ de generar el tren de pulsos PWM determinista, suave y simétrico para cada llanta.
+5. **Cerebro de Bajo Nivel: ESP32-C3-Zero (Exclusivo para Motores y Servo)**
+   * **Comunicación UART Unidireccional (Simplex) con lógica 3.3V nativa:** Conexión directa desde el pin **TX de la Orange Pi (Pin 11 / PH2 - 3.3V)** hacia el pin **RX del ESP32-C3-Zero (GPIO 20)**. Al ser ambos dispositivos de lógica nativa a 3.3V, la compatibilidad es perfecta, segura y libre de convertidores de nivel lógico.
+   * **Al ESP32-C3 SOLAMENTE se conectan los actuadores:** el driver DRV8833 (GPIO 0, 1, 2, 3 para PWM a 20 kHz ultrasónico, GPIO 4 para SLEEP) y el servomotor de dirección/mecanismo (GPIO 5).
+   * *¿Por qué separar el control de motores en el ESP32-C3?* Los sistemas operativos como Linux no son de tiempo real estricto (*hard real-time*); generar PWM directamente desde los pines de una SBC puede presentar micro-jitter e inconsistencias cuando la CPU se satura procesando visión. El microcontrolador RISC-V a 160 MHz se encarga al $100\%$ de generar el tren de pulsos PWM determinista a 20 kHz (silencioso e inmune a jitter) con un temporizador Watchdog por hardware de 300 ms.
 
 6. **Driver de Motor: DRV8833**
    * Elegido sobre el clásico L298N porque el DRV8833 utiliza puentes H de transistores MOSFET con una caída de voltaje interna prácticamente nula ($\approx 0.1\text{ V}$ frente a los $\approx 2.0\text{ V}$ que desperdicia el L298N en forma de calor).

@@ -1,5 +1,5 @@
 """Capa de abstracción de hardware (HAL) para Orange Pi Zero 2W.
-Controla sensores I2C (/dev/i2c-2), Arduino Uno (/dev/ttyS5), visión ArUco y PixyCam SPI."""
+Controla sensores I2C (/dev/i2c-2), ESP32-C3-Zero (/dev/ttyS5), visión ArUco y PixyCam SPI."""
 
 import math
 import os

@@ -8,7 +8,7 @@ echo   SINCRONIZANDO CODIGO CON ORANGE PI ZERO 2W
 echo   Destino: %ORANGE_USER%@%ORANGE_IP%:~/orange/
 echo ========================================================
 
-ssh %ORANGE_USER%@%ORANGE_IP% "mkdir -p ~/orange/tests && rm -f ~/orange/test.py"
+ssh %ORANGE_USER%@%ORANGE_IP% "mkdir -p ~/orange/tests && rm -f ~/orange/*.py ~/orange/tests/*.py"
 scp "%SCRIPT_DIR%*.py" %ORANGE_USER%@%ORANGE_IP%:~/orange/
 scp "%SCRIPT_DIR%tests\*.py" %ORANGE_USER%@%ORANGE_IP%:~/orange/tests/
 

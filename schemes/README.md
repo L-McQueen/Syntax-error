@@ -16,7 +16,7 @@
 > Para consultar la asignación detallada de los 26 pines del conector GPIO de la Orange Pi Zero 2W, revisa directamente el documento complementario: **[PINOUT.md](PINOUT.md)**.
 
 > [!CAUTION]
-> Asegúrate de que las tierras lógicas de la Orange Pi, del Arduino Uno y de ambos convertidores LM2596 confluyan en un **nodo de tierra común en estrella**. Una tierra flotante causará pérdida de sincronismo en la trama serial UART y lecturas erróneas en el bus I2C.
+> Asegúrate de que las tierras lógicas de la Orange Pi, del ESP32-C3-Zero y de ambos convertidores LM2596 confluyan en un **nodo de tierra común en estrella**. Una tierra flotante causará pérdida de sincronismo en la trama serial UART y lecturas erróneas en el bus I2C.
 
 ---
 
@@ -34,11 +34,11 @@
                          │                               │
                          │               ┌───────────────┴───────────────┐
                          │               ▼                               ▼
-                         │        Arduino Uno R3 ◄───UART (TX->RX)─── Orange Pi Zero 2W
+                         │        ESP32-C3-Zero  ◄───UART (TX->RX)─── Orange Pi Zero 2W
                          │       (Control Tracción)   (115200 Baud)   (Linux ARM64 / Visión)
                          │               │                               │
                          ▼               ▼                               │
-                   Driver DRV8833 ◄──────┘ (D3, D5, D6, D11 PWM)         │
+                   Driver DRV8833 ◄──────┘ (GPIO 0-3 PWM, 4 Sleep)       │
                    (Puente H MOSFET)                                     │
                          │                                               │
                          ▼                                               ▼
@@ -64,31 +64,20 @@ Los micromotores N20 bajo carga brusca o cambios de marcha producen dos perturba
 2. **Picos Inductivos de Retorno:** La energía inductiva almacenada en el bobinado de los motores genera picos de alta frecuencia.
 
 ### Solución Implementada:
-* **Doble Regulador Buck LM2596:** Dos módulos independientes alimentados desde la misma batería LiPo 3S. El convertidor #1 abastece exclusivamente los 7.8V de potencia para el DRV8833, mientras el convertidor #2 genera 5.0V limpios con filtrado capacitivo para la SBC y el Arduino.
+* **Doble Regulador Buck LM2596:** Dos módulos independientes alimentados desde la misma batería LiPo 3S. El convertidor #1 abastece exclusivamente los 7.8V de potencia para el DRV8833, mientras el convertidor #2 genera 5.0V limpios con filtrado capacitivo para la SBC y el ESP32-C3-Zero (vía su pin 5V).
 * **Tierra en Estrella (*Star Grounding*):** El retorno de corriente de potencia de los motores regresa directamente al borne negativo del módulo LM2596 #1 sin atravesar las pistas lógicas de la Orange Pi.
 
 ---
 
-## ⚡ 3. Compatibilidad de Niveles Lógicos UART (3.3V -> 5.0V)
+## ⚡ 3. Compatibilidad de Niveles Lógicos UART (3.3V Nativo)
 
-La comunicación entre la Orange Pi Zero 2W y el Arduino Uno es **estrictamente unidireccional (Simplex)**: la Orange Pi envía paquetes de consigna de velocidad y el Arduino únicamente ejecuta sin emitir respuesta.
+La comunicación entre la Orange Pi Zero 2W y el ESP32-C3-Zero es **estrictamente unidireccional (Simplex)**: la Orange Pi envía paquetes de consigna de velocidad y el ESP32-C3 únicamente ejecuta sin emitir respuesta.
 
-### Justificación de Conexión Directa sin Convertidor de Nivel:
-El microcontrolador ATmega328P del Arduino Uno trabaja a $V_{CC} = 5.0\text{ V}$. De acuerdo con su hoja de datos oficial:
-
-$$
-\text{Umbral Mínimo de Entrada ALTA } (V_{IH}) = 0.6 \times V_{CC} = 0.6 \times 5.0\text{ V} = 3.0\text{ V}
-$$
-
-Dado que el pin `TX` de la Orange Pi Zero 2W emite una señal de $V_{OH} = 3.3\text{ V}$, se cumple con holgura:
-
-$$
-3.3\text{ V} > 3.0\text{ V}
-$$
-
-Por lo tanto:
-* La señal de 3.3V es interpretada como un nivel `HIGH` lógico estable y libre de fluctuaciones.
-* El pin `RX` de la Orange Pi (`PH3`) permanece **desconectado**, eliminando cualquier riesgo de que los 5.0V del Arduino alcancen el silicio de la SBC.
+### Justificación de Conexión Directa a 3.3V Nativo:
+Tanto el SoC Allwinner H618 de la Orange Pi Zero 2W como el microcontrolador RISC-V del ESP32-C3-Zero operan con **lógica nativa de 3.3V**:
+* **Orange Pi Zero 2W:** Pin 11 (`PH2` / `UART5_TX`) emite pulsos seriales a 3.3V (115200 baudios).
+* **ESP32-C3-Zero:** Pin `GPIO 20` (`RX`) recibe directamente la señal sin necesidad de divisores resistivos ni convertidores de nivel lógico (logic level shifters).
+* El pin `RX` de la Orange Pi (`PH3`) permanece **desconectado**, manteniendo la topología Simplex limpia, segura y minimizando el cableado en el chasis.
 
 ---
 
@@ -129,4 +118,4 @@ Los pulsadores físicos montados en el chasis se conectan directamente a pines G
 * **Pulsador Navegar:** Pin 35 (`PI2`) -> Pulsación conecta a GND.
 * **Pulsador Seleccionar:** Pin 37 (`PI16`) -> Pulsación conecta a GND.
 
-Durante la carrera autónoma, la rutina de interrupción por cambio de estado (*edge detection*) detecta cualquier pulsación en menos de 20 ms, transmitiendo inmediatamente el paquete `M,0,0,0\n` al Arduino para detener el robot en seco y regresar al menú OLED.
+Durante la carrera autónoma, la rutina de interrupción por cambio de estado (*edge detection*) detecta cualquier pulsación en menos de 20 ms, transmitiendo inmediatamente el paquete `M,0,0,0\n` al ESP32-C3-Zero para detener el robot en seco y regresar al menú OLED.

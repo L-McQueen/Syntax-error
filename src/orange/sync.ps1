@@ -8,7 +8,7 @@ Write-Host "  SINCRONIZANDO CODIGO CON ORANGE PI ZERO 2W" -ForegroundColor Cyan
 Write-Host "  Destino: $ORANGE_USER@$ORANGE_IP:~/orange/" -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 
-ssh "$ORANGE_USER@$ORANGE_IP" "mkdir -p ~/orange/tests && rm -f ~/orange/test.py"
+ssh "$ORANGE_USER@$ORANGE_IP" "mkdir -p ~/orange/tests && rm -f ~/orange/*.py ~/orange/tests/*.py"
 scp "$LOCAL_DIR\*.py" "$ORANGE_USER@$ORANGE_IP:~/orange/"
 scp "$LOCAL_DIR\tests\*.py" "$ORANGE_USER@$ORANGE_IP:~/orange/tests/"
 

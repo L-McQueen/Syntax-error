@@ -288,17 +288,17 @@ Para evitar que el robot colisione si el proceso Python en Linux se congela o su
 ```mermaid
 sequenceDiagram
     participant Pi as Orange Pi (Linux)
-    participant Uno as Arduino Uno (C++)
+    participant Esp as ESP32-C3-Zero (C++)
     participant M as Motores N20
 
     loop Cada 50 ms (20 Hz)
-        Pi->>Uno: Trama serial 'M,vel_izq,vel_der,servo\n'
-        Note over Uno: Resetea temporizador Watchdog a 0 ms
-        Uno->>M: Genera PWM correspondiente
+        Pi->>Esp: Trama serial 'M,vel_izq,vel_der,servo\n'
+        Note over Esp: Resetea temporizador Watchdog a 0 ms
+        Esp->>M: Genera PWM correspondiente
     end
 
     Note over Pi: Falla o cuelgue del software en Linux
-    Note over Uno: El temporizador supera 300 ms sin recibir trama
-    Uno->>M: CORTAR ENERGÍA INMEDIATAMENTE (PWM = 0)
-    Note over Uno: Estado FAILSAFE de parada de emergencia
+    Note over Esp: El temporizador supera 300 ms sin recibir trama
+    Esp->>M: CORTAR ENERGÍA INMEDIATAMENTE (PWM = 0)
+    Note over Esp: Estado FAILSAFE de parada de emergencia
 ```

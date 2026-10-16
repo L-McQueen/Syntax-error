@@ -13,7 +13,7 @@ Este documento registra la asignación exacta de pines del conector de expansió
 | **5** | `PI7` | **TWI1_SCL** (I2C-1 Reloj) | | **6** | `PH0` | UART0_TX (Consola Debug) |
 | **7** | `PI13` | PWM3 / UART4_TX | | **8** | `PH1` | UART0_RX (Consola Debug) |
 | **9** | **GND** | Tierra / Masa | | **10** | `PI1` | GPIO General |
-| **11** | `PH2` | **UART5_TX** (Salida hacia Arduino RX) | | **12** | **GND** | Tierra / Masa |
+| **11** | `PH2` | **UART5_TX** (Salida hacia ESP32-C3-Zero RX) | | **12** | **GND** | Tierra / Masa |
 | **13** | `PH3` | UART5_RX (No conectado - Unidireccional) | | **14** | `PI14` | PWM4 / UART4_RX |
 | **15** | `PI5` | TWI0_SCL / UART2_TX | | **16** | `PH4` | GPIO General |
 | **17** | **3.3V** | Alimentación Lógica 3.3V | | **18** | **GND** | Tierra / Masa |
@@ -43,9 +43,9 @@ Este documento registra la asignación exacta de pines del conector de expansió
   * MPU-6050 (IMU): Dirección fija `0x68`
   * SSD1306 (OLED): Dirección fija `0x3C`
 
-### B. Comunicación Serial UART5 (`/dev/ttyS5`) - Control Arduino
-* **TX:** Pin 11 (`PH2` / `UART5_TX`) -> Conectado a Pin 0 (RX) del Arduino Uno R3.
-* **GND:** Pin 9 o 12 -> Conectado a GND del Arduino Uno R3.
+### B. Comunicación Serial UART5 (`/dev/ttyS5`) - Control ESP32-C3-Zero
+* **TX:** Pin 11 (`PH2` / `UART5_TX`) -> Conectado a GPIO 20 (RX) del ESP32-C3-Zero.
+* **GND:** Pin 9 o 12 -> Conectado a GND del ESP32-C3-Zero.
 * **RX:** Pin 13 (`PH3` / `UART5_RX`) -> Desconectado (comunicación estrictamente unidireccional).
 
 ### C. Bus SPI1 (`/dev/spidev1.0`) - PixyCam v2

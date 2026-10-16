@@ -37,7 +37,7 @@ El robot utiliza una configuración de **tracción diferencial de dos ruedas mot
                             │      └───────┘      │
                             │  [Pila LiPo 3S 11.1]│  <- Masa baja central
                             │    [Orange Pi 2W]   │
-                            │    [Arduino Uno]    │
+                            │   [ESP32-C3-Zero]   │
                             │  [DRV8833 + LM2596] │
                             │ ┌─────┐     ┌─────┐ │
              Rueda Izquierda│ │ N20 │     │ N20 │ │ Rueda Derecha
@@ -64,7 +64,7 @@ El robot utiliza una configuración de **tracción diferencial de dos ruedas mot
    * **Sensor Frontal VL53L1X:** Montado en la proa a 35 mm del suelo, con ángulo de 0° de elevación, blindado lateralmente con conducto cilíndrico para limitar el cono de dispersión óptica a $27^\circ$.
    * **Sensores Laterales VL53L0X:** Montados a 90° exactos perpendicular al eje longitudinal, orientados hacia las paredes laterales a la altura media de 35 mm (por encima del perfil de la base de madera de la pista).
 3. **Bahía Aislada de Electrónica:**
-   * Soporte en dos niveles: la Orange Pi Zero 2W se monta en el piso superior para facilitar la ventilación por convección del SoC Allwinner H618, mientras el Arduino Uno y el driver DRV8833 se fijan en el piso inferior cerca de las salidas de motor.
+   * Soporte en dos niveles: la Orange Pi Zero 2W se monta en el piso superior para facilitar la ventilación por convección del SoC Allwinner H618, mientras el ESP32-C3-Zero y el driver DRV8833 se fijan en el piso inferior cerca de las salidas de motor.
 4. **Soporte Angular para OLED SSD1306:**
    * Inclinación a 45° en la cubierta superior para permitir la lectura cómoda de telemetría y el accionamiento de los pulsadores de navegación sin agacharse sobre la pista.
 

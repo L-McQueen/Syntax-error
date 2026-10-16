@@ -9,7 +9,7 @@
 
   <p>
     <a href="https://github.com/L-McQueen/Syntax-error"><img src="https://img.shields.io/badge/Platform-Orange_Pi_Zero_2W-orange.svg?style=for-the-badge&logo=linux" alt="Orange Pi"></a>
-    <a href="https://github.com/L-McQueen/Syntax-error"><img src="https://img.shields.io/badge/MCU-Arduino_Uno_R3-00979D.svg?style=for-the-badge&logo=arduino" alt="Arduino"></a>
+    <a href="https://github.com/L-McQueen/Syntax-error"><img src="https://img.shields.io/badge/MCU-ESP32--C3--Zero-red.svg?style=for-the-badge&logo=espressif" alt="ESP32-C3-Zero"></a>
     <a href="https://github.com/L-McQueen/Syntax-error"><img src="https://img.shields.io/badge/Simulation-Webots_R2023b-00599C.svg?style=for-the-badge" alt="Webots"></a>
     <a href="https://github.com/L-McQueen/Syntax-error"><img src="https://img.shields.io/badge/Driver-DRV8833_Dual_MOSFET-lightgrey.svg?style=for-the-badge" alt="DRV8833"></a>
     <a href="https://github.com/L-McQueen/Syntax-error"><img src="https://img.shields.io/badge/Sensors-ToF_VL53L1X_%2B_VL53L0X-yellow.svg?style=for-the-badge" alt="Sensors"></a>
@@ -46,7 +46,7 @@
 │   └── 📄 README.md          # Filtro complementario en Y, centrado PID, FSMs y Watchdog
 │
 ├── 📁 src/                   # Código fuente completo del proyecto
-│   ├── 📁 arduino/           # Firmware C++ con Watchdog de tracción y PWM determinista
+│   ├── 📁 esp32/             # Firmware C++ con Watchdog de tracción y PWM determinista
 │   ├── 📁 orange/            # Orquestador Python, menú OLED, HAL multihilo y suite de tests
 │   ├── 📁 webots-sim2real/   # Gemelo digital en Webots (mundos 3D, controllers y supervisors)
 │   └── 📄 README.md          # Guía general de arquitectura y flujo de software
@@ -96,11 +96,11 @@ El nombre **3nIgMa S3t3ki** rinde homenaje a dos conceptos fundamentales:
                          │                               │
                          │               ┌───────────────┴───────────────┐
                          │               ▼                               ▼
-                         │        Arduino Uno R3 ◄───UART (TX->RX)─── Orange Pi Zero 2W
+                         │        ESP32-C3-Zero  ◄───UART (TX->RX)─── Orange Pi Zero 2W
                          │       (Tracción / PWM)  (115200 Baud Simplex) (Linux ARM64 / HAL)
                          │               │                               │
                          ▼               ▼                               │
-                   Driver DRV8833 ◄──────┘ (D3, D5, D6, D11)             │
+                   Driver DRV8833 ◄──────┘ (GPIO 0, 1, 2, 3)             │
                    (Puente H MOSFET)                                     │
                          │                                               │
                          ▼                                               ▼
@@ -123,8 +123,8 @@ El nombre **3nIgMa S3t3ki** rinde homenaje a dos conceptos fundamentales:
 | Subsistema | Componente | Conexión / Bus | Función Principal |
 | :--- | :--- | :--- | :--- |
 | **Cerebro Superior** | [Orange Pi Zero 2W](components/) | Linux Debian 12 | Fusión sensorial, navegación de laberinto, visión y menú OLED |
-| **Controlador PWM** | [Arduino Uno R3](components/) | UART `/dev/ttyS5` (115200) | Generación determinista de PWM y Watchdog de seguridad (300 ms) |
-| **Driver de Motores** | [DRV8833 Dual MOSFET](components/) | PWM D3, D5, D6, D11 | Tracción eficiente con caída interna mínima ($\approx 0.1\text{ V}$) |
+| **Controlador PWM** | [ESP32-C3-Zero](components/) | UART `/dev/ttyS5` (115200) | Generación determinista de PWM a 20 kHz y Watchdog de seguridad (300 ms) |
+| **Driver de Motores** | [DRV8833 Dual MOSFET](components/) | PWM GPIO 0, 1, 2, 3 | Tracción eficiente con caída interna mínima ($\approx 0.1\text{ V}$) |
 | **Actuadores** | [Motores N20 (100:1)](components/) | Tracción 7.8V fija | Reducción metálica de alto par para ascender rampas |
 | **Distancia Frontal** | [Pololu VL53L1X](components/) | `/dev/i2c-2` (0x29) | Detección de paredes a largo alcance (hasta 4.0 m) |
 | **Distancia Lateral** | [2x Pololu VL53L0X](components/) | `/dev/i2c-2` (0x30 y 0x31) | Centrado lateral PID en pasillos de 30 cm |
@@ -155,7 +155,7 @@ PWM_{\text{der}} &= PWM_{\text{base}} + (K_p \cdot e(t) + K_d \cdot \dot{e}(t))
 \end{aligned}
 $$
 
-### C. Failsafe Hardware (Watchdog de 300 ms en Arduino)
+### C. Failsafe Hardware (Watchdog de 300 ms en ESP32-C3-Zero)
 Si el software en Linux se bloquea o el cable serial sufre desconexión, el microcontrolador corta la energía a los motores en **menos de 300 ms**, evitando colisiones mecánicas accidentales.
 
 ---
@@ -180,9 +180,10 @@ Si el software en Linux se bloquea o el cable serial sufre desconexión, el micr
 
 ## 🚀 7. Guía de Puesta en Marcha Rápida
 
-### 1. Flashear el Arduino Uno
-1. Abre el sketch `src/arduino/firmware_motor_controller/firmware_motor_controller.ino` en el Arduino IDE.
-2. Selecciona la placa **Arduino Uno** y sube el firmware.
+### 1. Flashear el ESP32-C3-Zero
+1. Abre el sketch `src/esp32/firmware_motor_controller/firmware_motor_controller.ino` en el Arduino IDE.
+2. Selecciona la placa **ESP32C3 Dev Module** (ESP32 by Espressif) con `USB CDC On Boot: Enabled`.
+3. Conecta el ESP32-C3-Zero por USB-C (si no entra en modo programación automáticamente, mantén presionado el botón **BOOT**, presiona y suelta **RESET**, y luego suelta **BOOT**) y sube el firmware.
 
 ### 2. Sincronizar el Software con la Orange Pi
 Desde tu terminal en Windows:
@@ -199,7 +200,10 @@ python3 ~/orange/tests/test_screen.py
 # Probar sensor inercial MPU-6050
 python3 ~/orange/tests/test_imu.py
 
-# Probar integración combinada IMU + pantalla OLED
+# Probar sensores de distancia ToF (1x VL53L1X frontal + 2x VL53L0X laterales con filtro de cascada)
+python3 ~/orange/tests/test_tof.py
+
+# Probar integración combinada IMU + pantalla OLED + ToF
 python3 ~/orange/tests/test_imu_screen.py
 ```
 

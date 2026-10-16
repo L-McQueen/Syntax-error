@@ -22,8 +22,8 @@
 | Componente | Rol en el Robot | Protocolo / Bus | Voltaje Lógico | Alimentación | Justificación Técnica Clave |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Orange Pi Zero 2W** | Computadora de Abordo (SBC) | Linux OS / Debian 12 | 3.3V | 5.0V / 2.0A | Procesamiento multinúcleo para visión, FSM y HAL multihilo |
-| **Arduino Uno R3** | Controlador de Tracción (MCU) | UART (`/dev/ttyS5`) | 5.0V | 5.0V | Generación determinista de PWM sin latencia de SO |
-| **DRV8833** | Driver Puente H Dual MOSFET | PWM (D3, D5, D6, D11) | 3.3V - 5.0V | 7.8V Estabilizado | Caída de voltaje casi nula ($\approx 0.1\text{V}$) frente al L298N |
+| **ESP32-C3-Zero** | Controlador de Tracción (MCU) | UART (`/dev/ttyS5`) | 3.3V | 5.0V / 3.3V | Generación determinista de PWM LEDC a 20 kHz sin latencia de SO |
+| **DRV8833** | Driver Puente H Dual MOSFET | PWM (GPIO 0, 1, 2, 3) | 3.3V - 5.0V | 7.8V Estabilizado | Caída de voltaje casi nula ($\approx 0.1\text{V}$) frente al L298N |
 | **Micromotores N20 (100:1)**| Actuadores de Tracción | Salidas Puente H | N/A | 7.8V (Potencia) | Alto torque con caja reductora metálica para subir rampas |
 | **Pololu VL53L1X** | Sensor Frontal de Distancia | I2C (`/dev/i2c-2`, 0x29) | 3.3V | 3.3V / 5.0V | Rango láser largo de hasta 4.0 m con cono milimétrico estrecho |
 | **Pololu VL53L0X (x2)** | Sensores Laterales ToF | I2C (0x30 y 0x31) | 3.3V | 3.3V / 5.0V | Medición precisa en pasillos de 30 cm sin eco acústico falso |
@@ -42,17 +42,19 @@
 * **Buses Integrados Usados:**
   - `/dev/i2c-2`: Conectado a IMU, pantalla OLED y los 3 sensores ToF.
   - `/dev/spidev1.0`: Bus SPI de alta velocidad para visión complementaria.
-  - `/dev/ttyS5`: Puerto serial UART a 115200 baudios hacia el Arduino Uno.
+  - `/dev/ttyS5`: Puerto serial UART a 115200 baudios hacia el ESP32-C3-Zero.
 * **Por qué se eligió:** Ofrece un costo 3 veces menor que una Raspberry Pi 4 con capacidad completa para ejecutar OpenCV, hilos concurrentes de sensado y algoritmos de grafo para laberintos.
 
 ---
 
-## ⚡ 2. Arduino Uno R3 (Controlador de Potencia y Tiempo Real)
+## ⚡ 2. Waveshare ESP32-C3-Zero (Controlador de Potencia y Tiempo Real)
 
-* **Microcontrolador:** Microchip ATmega328P a 16 MHz.
-* **Función:** Generación de tren de pulsos PWM determinista y ejecución del Watchdog de seguridad (300 ms).
-* **Por qué separar el control de motores:** Un sistema operativo como Linux no garantiza tiempo real estricto (*hard real-time*); si la SBC sufre un pico de CPU procesando visión, un PWM por software oscilaría, provocando desvíos. El microcontrolador garantiza estabilidad absoluta de frecuencia y ciclo útil.
-* **Comunicación Simplex:** Recibe comandos en formato `M,vel_izq,vel_der,servo\n`. No transmite respuesta, eliminando necesidad de convertidores de nivel bidireccionales.
+* **Microcontrolador:** Espressif ESP32-C3 (Procesador RISC-V 32-bit de un solo núcleo a 160 MHz).
+* **Factor de Forma Miniatura:** $23.5 \times 18.0\text{ mm}$ con pad almenado, liberando más del 85% del volumen en el piso inferior del chasis respecto al Arduino Uno.
+* **Nivel Lógico Nativo a 3.3V:** Voltaje lógico 100% compatible con los 3.3V de la Orange Pi Zero 2W, eliminando disparidades o riesgos eléctricos.
+* **Generación de PWM por Hardware (LEDC a 20 kHz):** Generación de PWM de alta frecuencia inaudible que suprime por completo el zumbido acústico de los micromotores N20, sin colisiones de temporizador con el micro-servo SG90.
+* **Función y Seguridad:** Ejecución determinista del tren de pulsos y Watchdog de seguridad (failsafe de parada a los 300 ms sin comandos).
+* **Comunicación Simplex:** Recibe comandos en formato `M,vel_izq,vel_der,servo\n` a 115200 baudios por su pin RX (GPIO 20).
 
 ---
 
@@ -102,5 +104,5 @@
 
 * **Fuente Primaria:** Batería de Polímero de Litio (LiPo) 3S (11.1V nominal, 12.6V a plena carga).
 * **Regulador LM2596 #1 (Potencia Motores):** Calibrado a $7.8\text{ V}$ continuos con condensador de filtro de bajo ESR. Alimenta exclusivamente el DRV8833.
-* **Regulador LM2596 #2 (Lógica Limpia):** Calibrado a $5.0\text{ V}$ para la Orange Pi Zero 2W y el Arduino Uno R3.
+* **Regulador LM2596 #2 (Lógica Limpia):** Calibrado a $5.0\text{ V}$ para la Orange Pi Zero 2W y el ESP32-C3-Zero (pin 5V).
 * **Aislamiento Galvánico:** Esta separación física impide que los picos inductivos de los motores generen caídas momentáneas de voltaje (*voltage sags*), previniendo reinicios repentinos (*brownouts*) en el procesador.

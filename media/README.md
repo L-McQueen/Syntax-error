@@ -29,7 +29,7 @@
       <td align="center" width="50%">
         <strong>Bahía de Electrónica y Cableado</strong><br>
         <img src="https://via.placeholder.com/600x400/1e293b/38bdf8?text=Bah%C3%ADa+de+Electr%C3%B3nica" alt="Bahía de Electrónica" width="100%"><br>
-        <i>Distribución aislada de la Orange Pi Zero 2W y el Arduino Uno.</i>
+        <i>Distribución aislada de la Orange Pi Zero 2W y el ESP32-C3-Zero.</i>
       </td>
     </tr>
     <tr>
